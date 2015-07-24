@@ -5,4 +5,4 @@ import log from "log/log.js";
 log.log("app starting")
 geolocation.init();
 
-nav.go("list");
+nav.go("map");

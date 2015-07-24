@@ -3,9 +3,15 @@ System.register("items.js", ["net.js", "item.js"], function (_export) {
 
 	var net, Item, items, usedTiles;
 
+	_export("getById", getById);
+
 	_export("getInViewport", getInViewport);
 
 	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
+
+	function getById(id) {
+		return items[id];
+	}
 
 	function getInViewport(map) {
 		var half = map.getSize().clone().scale(0.5);
@@ -100,98 +106,27 @@ System.register("items.js", ["net.js", "item.js"], function (_export) {
 			Item = _itemJs["default"];
 		}],
 		execute: function () {
-			items = {};
+			items = Object.create(null);
 			usedTiles = Object.create(null);
 		}
 	};
 });
 
-System.register("list/layer.js", ["items.js"], function (_export) {
+System.register("list/list.js", [], function (_export) {
 	"use strict";
 
-	var items, Layer;
+	var List;
 
 	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	return {
-		setters: [function (_itemsJs) {
-			items = _itemsJs;
-		}],
-		execute: function () {
-			Layer = (function () {
-				function Layer(map) {
-					_classCallCheck(this, Layer);
-
-					this._map = map;
-					this._layer = new SMap.Layer.Marker();
-					map.addLayer(this._layer).enable();
-					map.getSignals().addListener(this, "map-redraw", "_mapRedraw");
-
-					this._mapRedraw();
-				}
-
-				_createClass(Layer, [{
-					key: "_mapRedraw",
-					value: function _mapRedraw() {
-						var _this = this;
-
-						var zoom = this._map.getZoom();
-						if (zoom < 13) {
-							this._layer.removeAll();
-							return;
-						}
-
-						items.getInViewport(this._map).then(function (items) {
-							return _this._render(items);
-						});
-					}
-				}, {
-					key: "_render",
-					value: function _render(items) {
-						this._layer.removeAll();
-
-						var markers = items.map(function (item) {
-							var coords = item.getCoords();
-							return new SMap.Marker(coords, null, { title: item.getName() });
-						});
-
-						this._layer.addMarker(markers);
-					}
-				}]);
-
-				return Layer;
-			})();
-
-			_export("default", Layer);
-		}
-	};
-});
-
-System.register("list/list.js", ["./layer.js"], function (_export) {
-	"use strict";
-
-	var Layer, List;
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	return {
-		setters: [function (_layerJs) {
-			Layer = _layerJs["default"];
-		}],
+		setters: [],
 		execute: function () {
 			List = (function () {
 				function List() {
 					_classCallCheck(this, List);
-
-					var map = new SMap(document.querySelector("#map"), SMap.Coords.fromWGS84(14.16876, 48.66177), 13);
-					map.addDefaultControls();
-					map.addDefaultLayer(SMap.DEF_TURIST).enable();
-
-					var layer = new Layer(map);
 				}
 
 				_createClass(List, [{
@@ -211,6 +146,12 @@ System.register("list/list.js", ["./layer.js"], function (_export) {
 });
 
 System.register("net.js", [], function (_export) {
+	/**
+  dve optimalizace: 
+    1) pokud se ptame na tile a existuje nejaky jeji pyramidovy rodic, co je prazdny, pak je take prazdna
+    2) pokud je img 1x1, nemusime se ptat na tile
+ */
+
 	"use strict";
 
 	var tileServers, expando, nonce;
@@ -218,6 +159,17 @@ System.register("net.js", [], function (_export) {
 	_export("getTile", getTile);
 
 	_export("getDetail", getDetail);
+
+	function image(url) {
+		return new Promise(function (resolve, reject) {
+			var node = new Image();
+			node.onload = function () {
+				node.onload = null;
+				resolve();
+			};
+			node.src = url;
+		});
+	}
 
 	function jsonp(url) {
 		var cb = "jQuery" + expando + "_" + nonce++;
@@ -240,7 +192,12 @@ System.register("net.js", [], function (_export) {
 
 	function getTile(x, y, z) {
 		var server = (x + y) % tileServers + 1;
-		return jsonp("https://tiles0" + server + ".geocaching.com/map.info?x=" + x + "&y=" + y + "&z=" + z);
+		var base = "https://tiles0" + server + ".geocaching.com";
+		var imgUrl = base + "/map.png?x=" + x + "&y=" + y + "&z=" + z + "&ts=1";
+		var jsonUrl = base + "/map.info?x=" + x + "&y=" + y + "&z=" + z;
+		return image(imgUrl).then(function () {
+			return jsonp(jsonUrl);
+		});
 	}
 
 	function getDetail(id) {
@@ -256,6 +213,106 @@ System.register("net.js", [], function (_export) {
 		}
 	};
 });
+
+System.register("map/map.js", ["items.js", "detail/detail.js", "log/log.js"], function (_export) {
+	"use strict";
+
+	var items, detail, log, Map;
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	return {
+		setters: [function (_itemsJs) {
+			items = _itemsJs;
+		}, function (_detailDetailJs) {
+			detail = _detailDetailJs["default"];
+		}, function (_logLogJs) {
+			log = _logLogJs["default"];
+		}],
+		execute: function () {
+			Map = (function () {
+				function Map() {
+					_classCallCheck(this, Map);
+
+					/*
+     sz: 	14.1596, 49.41298 15
+     lipno: 14.16876, 48.66177 13 
+     */
+					this._map = new SMap(document.querySelector("#map"), SMap.Coords.fromWGS84(14.16876, 48.66177), 13);
+					this._map.addControl(new SMap.Control.Sync({ bottomSpace: 0 }));
+					this._map.addDefaultControls();
+					this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
+
+					this._markers = new SMap.Layer.Marker();
+					this._map.addLayer(this._markers).enable();
+					this._map.getSignals().addListener(this, "map-redraw", "_mapRedraw");
+					this._map.getSignals().addListener(this, "marker-click", "_markerClick");
+
+					this._mapRedraw();
+				}
+
+				_createClass(Map, [{
+					key: "activate",
+					value: function activate() {}
+				}, {
+					key: "deactivate",
+					value: function deactivate() {}
+				}, {
+					key: "setPosition",
+					value: function setPosition(position) {}
+				}, {
+					key: "_mapRedraw",
+					value: function _mapRedraw() {
+						var _this = this;
+
+						var zoom = this._map.getZoom();
+						if (zoom < 13) {
+							this._markers.removeAll();
+							return;
+						}
+
+						items.getInViewport(this._map).then(function (items) {
+							return _this._render(items);
+						});
+					}
+				}, {
+					key: "_render",
+					value: function _render(items) {
+						this._markers.removeAll();
+
+						var markers = items.map(function (item) {
+							var coords = item.getCoords();
+							return new SMap.Marker(coords, item.getId(), { title: item.getName() });
+						});
+
+						this._markers.addMarker(markers);
+					}
+				}, {
+					key: "_markerClick",
+					value: function _markerClick(e) {
+						var id = e.target.getId();
+						var item = items.getById(id);
+						if (!item) {
+							log.error("item", id, "not in cache!");
+							return;
+						}
+						detail.show(item);
+					}
+				}]);
+
+				return Map;
+			})();
+
+			_export("default", Map);
+
+			_export("default", new Map());
+		}
+	};
+});
+
+/* FIXME */
 
 System.register("log/log.js", [], function (_export) {
 	"use strict";
@@ -409,21 +466,25 @@ System.register("status/status.js", ["log/log.js"], function (_export) {
 	};
 });
 
-System.register("detail/detail.js", [], function (_export) {
+System.register("detail/detail.js", ["nav.js"], function (_export) {
 	"use strict";
 
-	var Detail;
+	var nav, Detail;
 
 	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	return {
-		setters: [],
+		setters: [function (_navJs) {
+			nav = _navJs;
+		}],
 		execute: function () {
 			Detail = (function () {
 				function Detail() {
 					_classCallCheck(this, Detail);
+
+					this._node = document.querySelector("#detail");
 				}
 
 				_createClass(Detail, [{
@@ -432,6 +493,19 @@ System.register("detail/detail.js", [], function (_export) {
 				}, {
 					key: "deactivate",
 					value: function deactivate() {}
+				}, {
+					key: "show",
+					value: function show(item) {
+						nav.go("detail");
+
+						this._item = item;
+						this._build();
+					}
+				}, {
+					key: "_build",
+					value: function _build() {
+						this._node.innerHTML = "<pre>" + JSON.stringify(this._item, null, 2) + "</pre>";
+					}
 				}]);
 
 				return Detail;
@@ -459,7 +533,7 @@ System.register("app.js", ["nav.js", "geolocation.js", "log/log.js"], function (
       log.log("app starting");
       geolocation.init();
 
-      nav.go("list");
+      nav.go("map");
     }
   };
 });
@@ -500,10 +574,10 @@ System.register("geolocation.js", ["status/status.js", "log/log.js"], function (
 	};
 });
 
-System.register("nav.js", ["list/list.js", "detail/detail.js", "status/status.js", "log/log.js"], function (_export) {
+System.register("nav.js", ["map/map.js", "list/list.js", "detail/detail.js", "status/status.js", "log/log.js"], function (_export) {
 	"use strict";
 
-	var list, detail, status, log, current, components, links, ul;
+	var map, list, detail, status, log, current, components, links, ul;
 
 	_export("go", go);
 
@@ -527,7 +601,9 @@ System.register("nav.js", ["list/list.js", "detail/detail.js", "status/status.js
 	}
 
 	return {
-		setters: [function (_listListJs) {
+		setters: [function (_mapMapJs) {
+			map = _mapMapJs["default"];
+		}, function (_listListJs) {
 			list = _listListJs["default"];
 		}, function (_detailDetailJs) {
 			detail = _detailDetailJs["default"];
@@ -538,7 +614,7 @@ System.register("nav.js", ["list/list.js", "detail/detail.js", "status/status.js
 		}],
 		execute: function () {
 			current = "";
-			components = { list: list, detail: detail, status: status, log: log };
+			components = { map: map, list: list, detail: detail, status: status, log: log };
 			links = {};
 			ul = document.querySelector("nav ul");
 

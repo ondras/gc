@@ -1,10 +1,11 @@
+import map from "map/map.js";
 import list from "list/list.js";
 import detail from "detail/detail.js";
 import status from "status/status.js";
 import log from "log/log.js";
 
 let current = "";
-let components = {list, detail, status, log};
+let components = {map, list, detail, status, log};
 
 let links = {};
 let ul = document.querySelector("nav ul");

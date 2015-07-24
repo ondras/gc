@@ -1,8 +1,12 @@
 import * as net from "net.js";
 import Item from "item.js";
 
-let items = {};
+let items = Object.create(null);
 let usedTiles = Object.create(null);
+
+export function getById(id) {
+	return items[id];
+}
 
 export function getInViewport(map) {
 	let half = map.getSize().clone().scale(0.5);
