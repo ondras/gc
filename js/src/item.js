@@ -51,11 +51,11 @@ export default class Item {
 
 
 	_positionToWGS84(position, projection) {
-		let resolution = 64; // units per tile size
+		let resolution = 4; // tile pixels per json char
 		let {tile, x, y} = position;
-		let abs = new SMap.Pixel(tile.x, tile.y).scale(tile.tileSize);
-		abs.x += (x+0.5) * (tile.tileSize / resolution);
-		abs.y += (y+0.5) * (tile.tileSize / resolution);
+		let abs = tile.toPixel();
+		abs.x += (x+0.5) * resolution;
+		abs.y += (y+0.5) * resolution;
 
 		return projection.unproject(abs, tile.zoom);
 	}

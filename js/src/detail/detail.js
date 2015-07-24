@@ -1,4 +1,5 @@
 import * as nav from "nav.js";
+import * as itemStorage from "itemStorage.js";
 
 class Detail {
 	constructor() {
@@ -8,7 +9,13 @@ class Detail {
 	activate() {}
 	deactivate() {}
 
-	show(item) {
+	show(id) {
+		let item = itemStorage.getById(id);
+		if (!item) { 
+			log.error("item", id, "not in cache"); 
+			return;
+		}
+
 		nav.go("detail");
 
 		this._item = item;

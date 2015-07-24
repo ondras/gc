@@ -1,8 +1,4 @@
-/**
- dve optimalizace: 
-   1) pokud se ptame na tile a existuje nejaky jeji pyramidovy rodic, co je prazdny, pak je take prazdna
-   2) pokud je img 1x1, nemusime se ptat na tile
-*/
+import log from "log/log.js";
 
 const tileServers = 4;
 const expando = `1.9.1${Math.random()}`.replace(/\D/g, "");
@@ -13,8 +9,9 @@ function image(url) {
 		let node = new Image();
 		node.onload = () => {
 			node.onload = null;
-			resolve();
+			resolve(node);
 		};
+//		log.debug("requesting image", url);
 		node.src = url;
 	});
 }
@@ -23,6 +20,7 @@ function jsonp(url) {
 	let cb = `jQuery${expando}_${nonce++}`;
 	let script = document.createElement("script");
 	script.src = `${url}&jsoncallback=${cb}&_=${Date.now()}`;
+//	log.debug("requesting json", script.src);
 	let response = null;
 	window[cb] = (data) => response = data;
 
@@ -36,12 +34,17 @@ function jsonp(url) {
 	});
 }
 
-export function getTile(x, y, z) {
-	let server = ((x+y) % tileServers) + 1;
+export function getTile(tile) {
+	let server = ((tile.x+tile.y) % tileServers) + 1;
 	let base = `https://tiles0${server}.geocaching.com`;
-	let imgUrl = `${base}/map.png?x=${x}&y=${y}&z=${z}&ts=1`;
-	let jsonUrl = `${base}/map.info?x=${x}&y=${y}&z=${z}`;
-	return image(imgUrl).then(() => jsonp(jsonUrl));
+	let imgUrl = `${base}/map.png?x=${tile.x}&y=${tile.y}&z=${tile.zoom}&ts=1`;
+	let jsonUrl = `${base}/map.info?x=${tile.x}&y=${tile.y}&z=${tile.zoom}`;
+
+	return image(imgUrl).then((image) => {
+//		log.debug("loaded image size", image.width, image.height);
+		if (image.width == 1) { return null; }
+		return jsonp(jsonUrl);
+	});
 }
 
 export function getDetail(id) {

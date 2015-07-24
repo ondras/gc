@@ -1,4 +1,4 @@
-import * as items from "items.js";
+import * as itemStorage from "itemStorage.js";
 import detail from "detail/detail.js";
 import log from "log/log.js";
 
@@ -8,16 +8,30 @@ export default class Map {
 		sz: 	14.1596, 49.41298 15
 		lipno: 14.16876, 48.66177 13 
 		*/
-		this._map = new SMap(document.querySelector("#map"), SMap.Coords.fromWGS84(14.16876, 48.66177), 13);
+		this._map = new SMap(document.querySelector("#map"), SMap.Coords.fromWGS84(14.16876, 48.66177), 14);
 		this._map.addControl(new SMap.Control.Sync({bottomSpace:0}));
 		this._map.addDefaultControls();
 		this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
-
+		
 		this._markers = new SMap.Layer.Marker();
 		this._map.addLayer(this._markers).enable();
+
+		let node = document.createElement("div");
+		node.id = "gps";
+		let opts = {
+			url: node,
+			anchor: {left: 10, top: 10}
+		}
+		this._positionMarker = new SMap.Marker(SMap.Coords.fromWGS84(0, 0), null, opts);
+		this._positionLayer = new SMap.Layer.Marker();
+		this._positionLayer.addMarker(this._positionMarker);
+		this._map.addLayer(this._positionLayer);
+
 		this._map.getSignals().addListener(this, "map-redraw", "_mapRedraw");
 		this._map.getSignals().addListener(this, "marker-click", "_markerClick");
-
+	}
+	
+	init() {
 		this._mapRedraw();
 	}
 
@@ -25,7 +39,13 @@ export default class Map {
 	deactivate() {}
 
 	setPosition(position) {
-		/* FIXME */
+		if (position) {
+			this._positionMarker.setCoords(position);
+			this._positionLayer.enable();
+			this._map.setCenter(position);
+		} else {
+			this._positionLayer.disable();
+		}
 	}
 
 	_mapRedraw() {
@@ -35,7 +55,7 @@ export default class Map {
 			return;
 		}
 
-		items.getInViewport(this._map).then(items => this._render(items));
+		itemStorage.getInViewport(this._map).then(items => this._render(items));
 	}
 
 	_render(items) {
@@ -50,13 +70,7 @@ export default class Map {
 	}
 
 	_markerClick(e) {
-		let id = e.target.getId();
-		let item = items.getById(id);
-		if (!item) { 
-			log.error("item", id, "not in cache!"); 
-			return;
-		}
-		detail.show(item);
+		detail.show(e.target.getId());
 	}
 }
 
