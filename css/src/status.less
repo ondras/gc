@@ -1,0 +1,30 @@
+#status li {
+	list-style: none;
+
+	&::before {
+		content: "";
+		display: inline-block;
+		width: 1em;
+		height: 1em;
+		border: 1px solid #000;
+		border-radius: 50%;
+		margin-right: 0.3em;
+	}
+
+	&.good::before {
+		background-color: #0f0;
+	}
+
+	&.bad::before {
+		background-color: #f00;
+	}
+
+	&.waiting::before {
+		background-color: #ff0;
+	}
+
+	&#position span:not(:empty) {
+		&::before { content: "("; }
+		&::after { content: ")"; }
+	}
+}

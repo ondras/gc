@@ -1,3 +1,61 @@
-#map {
+body {
+  margin: 0;
+}
+#list #map {
   height: 500px;
+}
+nav ul {
+  list-style: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+nav ul li {
+  flex: 1;
+}
+nav ul li a {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  padding: 1em 0;
+}
+nav ul li a.active {
+  background-color: #eee;
+}
+#status li {
+  list-style: none;
+}
+#status li::before {
+  content: "";
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 1px solid #000;
+  border-radius: 50%;
+  margin-right: 0.3em;
+}
+#status li.good::before {
+  background-color: #0f0;
+}
+#status li.bad::before {
+  background-color: #f00;
+}
+#status li.waiting::before {
+  background-color: #ff0;
+}
+#status li#position span:not(:empty)::before {
+  content: "(";
+}
+#status li#position span:not(:empty)::after {
+  content: ")";
+}
+#log {
+  font-family: monospace;
+  font-size: 85%;
+}
+#log .debug {
+  color: #666;
+}
+#log .error {
+  color: #c00;
 }

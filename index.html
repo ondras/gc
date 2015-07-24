@@ -7,6 +7,27 @@
 	</head>
 
 	<body>
+		<nav>
+			<ul>
+				<li><a href="#" data-section="list">List</a></li>
+				<li><a href="#" data-section="detail">Detail</a></li>
+				<li><a href="#" data-section="status">Status</a></li>
+				<li><a href="#" data-section="log">Log</a></li>
+			</ul>
+		</nav>
+
+		<section id="list">
+			<div id="map"></div>
+		</section>
+		<section id="detail"></section>
+		<section id="status">
+			<ul>
+				<li id="online">On-line</li>
+				<li id="position">Geolocation <span></span></li>
+			</ul>
+		</section>
+		<section id="log"></section>
+
 		<script src="//api.mapy.cz/loader.js"></script>
 		<script>Loader.load();</script>
 		<script src="js/polyfills.js"></script>

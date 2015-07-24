@@ -1,4 +1,8 @@
-import * as net from "net.js";
-import List from "list.js";
+import * as nav from "nav.js";
+import * as geolocation from "geolocation.js";
+import log from "log/log.js";
 
-new List();
+log.log("app starting")
+geolocation.init();
+
+nav.go("list");
