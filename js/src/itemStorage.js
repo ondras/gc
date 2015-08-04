@@ -31,14 +31,18 @@ export function getInViewport(map) {
 			usedTiles[tile] = true;
 			if (tileHasEmptyParent(tile)) { continue; }
 
-			let promise = net.getTile(tile).then(data => parseTileData(data, tile));
+			let promise = this.getTile(tile);
 			promises.push(promise);
 		}
 	}
 
 	return Promise.all(promises)
-		.then(() => computeCoords(proj))
+		.then(() => computeCoords())
 		.then(() => filterByViewport(map));
+}
+
+export function getTile(tile) {
+	return net.getTile(tile).then(data => parseTileData(data, tile));
 }
 
 function parseTileData(data, tile) {
@@ -59,13 +63,13 @@ function parseTileData(data, tile) {
 				item = new Item(id, record.n);
 				items[id] = item;
 			}
-			item.addPosition(tile, ...pos)
+			item.addPosition(tile, ...pos);
 		});
 	}
 }
 
-function computeCoords(proj) {
-	for (let id in items) { items[id].computeCoords(proj); }
+function computeCoords() {
+	for (let id in items) { items[id].computeCoords(); }
 }
 
 function filterByViewport(map) {

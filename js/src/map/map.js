@@ -38,6 +38,8 @@ export default class Map {
 	activate() {}
 	deactivate() {}
 
+	getProjection() { return this._map.getProjection(); }
+
 	setPosition(position) {
 		if (position) {
 			this._positionMarker.setCoords(position);

@@ -1,3 +1,5 @@
+import map from "map/map.js";
+
 export default class Tile {
 	constructor(x, y, zoom) {
 		this.x = x;
@@ -11,6 +13,12 @@ export default class Tile {
 		return new this(x, y, zoom);
 	}
 	
+	static fromCoords(coords, zoom) {
+		let projection = map.getProjection();
+		let abs = projection.project(coords, zoom);
+		return this.fromPixel(abs, 0, 0, zoom);
+	}
+
 	getParent() {
 		return new this.constructor(Math.floor(this.x/2), Math.floor(this.y/2), this.zoom-1);
 	}

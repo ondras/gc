@@ -23,7 +23,8 @@ class Detail {
 	}
 
 	_build() {
-		this._node.innerHTML = `<pre>${JSON.stringify(this._item, null, 2)}</pre>`;
+		this._item.build(this._node);
+//		this._node.innerHTML = `<pre>${JSON.stringify(this._item, null, 2)}</pre>`;
 	}
 }
 
