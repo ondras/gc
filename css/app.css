@@ -1,9 +1,6 @@
 body {
   margin: 0;
 }
-#list #map {
-  height: 500px;
-}
 nav ul {
   list-style: none;
   display: flex;
@@ -21,6 +18,12 @@ nav ul li a {
 }
 nav ul li a.active {
   background-color: #eee;
+}
+#list #map {
+  height: 500px;
+}
+#detail .unavailable {
+  text-decoration: line-through;
 }
 #status li {
   list-style: none;

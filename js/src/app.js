@@ -1,7 +1,7 @@
 import * as nav from "nav.js";
 import * as geolocation from "geolocation.js";
-import log from "log/log.js";
-import map from "map/map.js";
+import log from "panes/log.js";
+import map from "panes/map.js";
 
 log.log("app starting")
 geolocation.init();

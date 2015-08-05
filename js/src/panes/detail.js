@@ -1,13 +1,25 @@
 import * as nav from "nav.js";
 import * as itemStorage from "itemStorage.js";
+import * as pubsub from "pubsub.js";
 
 class Detail {
 	constructor() {
 		this._node = document.querySelector("#detail");
 	}
 
-	activate() {}
-	deactivate() {}
+	activate() {
+		pubsub.subscribe("item-change", this);
+	}
+
+	deactivate() {
+		pubsub.unsubscribe("item-change", this);
+	}
+
+	handleMessage(message, publisher, data) {
+		if (publisher != this._item) { return; }
+
+		this._build();
+	}
 
 	show(id) {
 		let item = itemStorage.getById(id);
@@ -23,8 +35,8 @@ class Detail {
 	}
 
 	_build() {
+		this._node.innerHTML = "";
 		this._item.build(this._node);
-//		this._node.innerHTML = `<pre>${JSON.stringify(this._item, null, 2)}</pre>`;
 	}
 }
 

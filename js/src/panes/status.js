@@ -1,4 +1,4 @@
-import log from "log/log.js";
+import log from "panes/log.js";
 
 class Status {
 	constructor() {

@@ -1,6 +1,6 @@
-import status from "status/status.js";
-import map from "map/map.js";
-import log from "log/log.js";
+import status from "panes/status.js";
+import map from "panes/map.js";
+import log from "panes/log.js";
 
 let onPosition = function(position) {
 	let coords = SMap.Coords.fromWGS84(position.coords.longitude, position.coords.latitude);

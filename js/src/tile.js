@@ -1,4 +1,4 @@
-import map from "map/map.js";
+import map from "panes/map.js";
 
 export default class Tile {
 	constructor(x, y, zoom) {

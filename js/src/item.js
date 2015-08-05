@@ -1,7 +1,9 @@
-import log from "log/log.js";
-import map from "map/map.js";
+import log from "panes/log.js";
+import map from "panes/map.js";
 import Tile from "tile.js";
 import * as itemStorage from "itemStorage.js";
+import * as net from "net.js";
+import * as pubsub from "pubsub.js";
 
 export default class Item {
 	constructor(id, name) {
@@ -10,6 +12,7 @@ export default class Item {
 		this._bestZoom = 0;
 		this._coords = null;
 		this._positions = [];
+		this._detail = null;
 	}
 
 	getId() { return this._id; }
@@ -17,10 +20,24 @@ export default class Item {
 	getCoords() { return this._coords; }
 
 	build(parent) {
-		log.debug("building item", this._id);
-		parent.innerHTML = this._name;
+//		log.debug("building item", this._id);
+		let heading = document.createElement("h2");
+		parent.appendChild(heading);
+		heading.appendChild(document.createTextNode(this._name));
 
 		this._checkBestPosition();
+
+		if (this._detail) {
+			this._buildDetail(parent);
+
+			if (!this._detail.available) { heading.classList.add("unavailable"); }
+
+		} else {
+			net.getDetail(this._id).then((response) => {
+				this._detail = response.data[0];
+				pubsub.publish("item-change", this);
+			});
+		}
 	}
 
 	addPosition(tile, x, y) {
@@ -75,16 +92,42 @@ export default class Item {
 
 	_checkBestPosition() {
 		if (this._bestZoom == 18) { 
-			log.debug("already at best zoom");
+//			log.debug("already at best zoom");
 			return; 
 		}
 
-		log.debug("now at zoom", this._bestZoom, "going deeper");
+//		log.debug("now at zoom", this._bestZoom, "going +1");
 
 		let tile = Tile.fromCoords(this._coords, this._bestZoom+1);
 		return itemStorage.getTile(tile).then(() => {
 			this.computeCoords();
+			pubsub.publish("item-change", this);
 			return this._checkBestPosition();
 		});
+	}
+
+	_buildDetail(parent) {
+		let table = document.createElement("table");
+		parent.appendChild(table);
+
+		this._buildRow(table, "Type", this._detail.type.text);
+		this._buildRow(table, "Date", this._detail.hidden);
+		this._buildRow(table, "Created by", this._detail.owner.text);
+		this._buildRow(table, "Difficulty", this._detail.difficulty.text);
+		this._buildRow(table, "Size", this._detail.container.text);
+		this._buildRow(table, "Favorites", this._detail.fp);
+	}
+
+	_buildRow(table, first, second) {
+		let row = document.createElement("tr");
+		table.appendChild(row);
+
+		let td = document.createElement("td");
+		row.appendChild(td);
+		td.appendChild(document.createTextNode(first));
+
+		td = document.createElement("td");
+		row.appendChild(td);
+		td.appendChild(document.createTextNode(second));
 	}
 }

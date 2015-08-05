@@ -1,6 +1,6 @@
 import * as itemStorage from "itemStorage.js";
-import detail from "detail/detail.js";
-import log from "log/log.js";
+import detail from "panes/detail.js";
+import log from "panes/log.js";
 
 export default class Map {
 	constructor() {
@@ -35,7 +35,10 @@ export default class Map {
 		this._mapRedraw();
 	}
 
-	activate() {}
+	activate() {
+		this._map.syncPort();
+	}
+
 	deactivate() {}
 
 	getProjection() { return this._map.getProjection(); }

@@ -1,7 +1,7 @@
 import * as net from "net.js";
 import Item from "item.js";
 import Tile from "tile.js";
-import log from "log/log.js";
+import log from "panes/log.js";
 
 let items = Object.create(null);
 let usedTiles = Object.create(null);
