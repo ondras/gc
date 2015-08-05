@@ -121,26 +121,39 @@ System.register("panes/log.js", [], function (_export) {
 	};
 });
 
-System.register("panes/list.js", [], function (_export) {
+System.register("panes/list.js", ["itemStorage.js", "panes/map.js"], function (_export) {
 	"use strict";
 
-	var List;
+	var itemStorage, map, List;
 
 	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	return {
-		setters: [],
+		setters: [function (_itemStorageJs) {
+			itemStorage = _itemStorageJs;
+		}, function (_panesMapJs) {
+			map = _panesMapJs["default"];
+		}],
 		execute: function () {
 			List = (function () {
 				function List() {
 					_classCallCheck(this, List);
+
+					this._node = document.querySelector("#list");
 				}
 
 				_createClass(List, [{
 					key: "activate",
-					value: function activate() {}
+					value: function activate() {
+						var center = map.getCenter();
+						var items = itemStorage.getNearby(center, 10);
+
+						this._node.innerHTML = items.map(function (item) {
+							return JSON.stringify(item);
+						}).join(", ");
+					}
 				}, {
 					key: "deactivate",
 					value: function deactivate() {}
@@ -364,6 +377,11 @@ System.register("panes/map.js", ["itemStorage.js", "panes/detail.js", "panes/log
 					key: "deactivate",
 					value: function deactivate() {}
 				}, {
+					key: "getCenter",
+					value: function getCenter() {
+						return this._map.getCenter();
+					}
+				}, {
 					key: "getProjection",
 					value: function getProjection() {
 						return this._map.getProjection();
@@ -506,6 +524,8 @@ System.register("itemStorage.js", ["net.js", "item.js", "tile.js", "panes/log.js
 
 	_export("getTile", getTile);
 
+	_export("getNearby", getNearby);
+
 	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
 
 	function getById(id) {
@@ -552,6 +572,19 @@ System.register("itemStorage.js", ["net.js", "item.js", "tile.js", "panes/log.js
 		return net.getTile(tile).then(function (data) {
 			return parseTileData(data, tile);
 		});
+	}
+
+	function getNearby(center, limit) {
+		var all = [];
+		for (var id in items) {
+			all.push(items[id]);
+		}
+
+		all.sort(function (a, b) {
+			return a.getCoords().distance(center) - b.getCoords().distance(center);
+		});
+
+		return all.slice(0, limit);
 	}
 
 	function parseTileData(data, tile) {
@@ -890,6 +923,9 @@ System.register("item.js", ["panes/log.js", "panes/map.js", "tile.js", "itemStor
 							if (!this._detail.available) {
 								heading.classList.add("unavailable");
 							}
+							var img = document.createElement("img");
+							img.src = "tmp/gif-large/" + this._detail.type.value + ".gif";
+							heading.insertBefore(img, heading.firstChild);
 						} else {
 							net.getDetail(this._id).then(function (response) {
 								_this._detail = response.data[0];

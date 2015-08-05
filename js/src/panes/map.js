@@ -41,6 +41,7 @@ export default class Map {
 
 	deactivate() {}
 
+	getCenter() { return this._map.getCenter(); }
 	getProjection() { return this._map.getProjection(); }
 
 	setPosition(position) {

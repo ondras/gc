@@ -45,6 +45,17 @@ export function getTile(tile) {
 	return net.getTile(tile).then(data => parseTileData(data, tile));
 }
 
+export function getNearby(center, limit) {
+	let all = [];
+	for (let id in items) { all.push(items[id]); }
+
+	all.sort((a, b) => {
+		return a.getCoords().distance(center) - b.getCoords().distance(center);
+	});
+
+	return all.slice(0, limit);
+}
+
 function parseTileData(data, tile) {
 	if (!data) { 
 		emptyTiles[tile] = tile;

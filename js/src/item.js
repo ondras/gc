@@ -31,6 +31,9 @@ export default class Item {
 			this._buildDetail(parent);
 
 			if (!this._detail.available) { heading.classList.add("unavailable"); }
+			let img = document.createElement("img");
+			img.src = `tmp/gif-large/${this._detail.type.value}.gif`;
+			heading.insertBefore(img, heading.firstChild);
 
 		} else {
 			net.getDetail(this._id).then((response) => {
