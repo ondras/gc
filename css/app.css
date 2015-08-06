@@ -1,6 +1,15 @@
 body {
   margin: 0;
 }
+#map #gps {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: rgba(0, 168, 255, 0.7);
+  border: 1px solid #fff;
+  box-shadow: 0 0 2px #00a8ff;
+}
 #list #map {
   height: 500px;
 }
