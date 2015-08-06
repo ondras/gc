@@ -1,6 +1,8 @@
 import * as nav from "nav.js";
 import * as itemStorage from "itemStorage.js";
 import * as pubsub from "pubsub.js";
+import log from "panes/log.js";
+import positionMarker from "positionmarker.js";
 
 class Detail {
 	constructor() {
@@ -17,8 +19,14 @@ class Detail {
 		this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
 
 		this._layer = new SMap.Layer.Marker();
-		this._map.addLayer(this._layer).enable();
+		this._map.addLayer(this._layer);
 
+		this._positionMarker = positionMarker();
+		this._layer.addMarker(this._positionMarker);
+
+		this._marker = new SMap.Marker(SMap.Coords.fromWGS84(0, 0), null, {anchor: {left:9,top:9}});
+		this._layer.addMarker(this._marker);
+		
 		pubsub.subscribe("orientation-change", this);
 		pubsub.subscribe("position-change", this);
 	}
@@ -50,6 +58,7 @@ class Detail {
 
 				if (this._coords) {
 					this._map.setCenter(this._coords);
+					this._positionMarker.setCoords(this._coords);
 				}
 			break;
 		}
@@ -78,25 +87,23 @@ class Detail {
 		this._updateDistance();
 		this._updateCompass();
 
-		this._layer.removeAll();
-		let marker = new SMap.Marker(this._item.getCoords(), null, {
-			/* FIXME */
-			anchor: {left:9,top:9},
-			url: this._item.getImage()
-		});
-		this._layer.addMarker(marker);
+		this._layer.enable();
+		this._marker.setCoords(this._item.getCoords());
+		this._marker.setURL(this._item.getImage());
 	}
 
 	_updateCompass() {
 		/* rotate map */
 		this._map.getContainer().style.transform = `rotate(${this._angle}deg)`;
+		
+		/* inverse rotate marker */
+		this._marker.getContainer()[SMap.LAYER_MARKER].style.transform = `rotate(${-this._angle}deg)`;
 
 		/* rotate arrow */
 		let azimuth = 0;
 		if (this._coords && this._item) {
 			azimuth = this._coords.azimuth(this._item.getCoords());
 		}
-
 		/* this._angle CCW, azimuth CW, rotation transform CW */
 		this._arrow.style.transform = `rotate(${azimuth + this._angle}deg)`;
 	}

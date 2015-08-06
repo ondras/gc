@@ -619,10 +619,29 @@ System.register("pubsub.js", [], function (_export) {
 	};
 });
 
-System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js"], function (_export) {
+System.register("positionmarker.js", [], function (_export) {
 	"use strict";
 
-	var nav, itemStorage, pubsub, Detail;
+	return {
+		setters: [],
+		execute: function () {
+			_export("default", function () {
+				var node = document.createElement("div");
+				node.className = "gps";
+				var opts = {
+					url: node,
+					anchor: { left: 10, top: 10 }
+				};
+				return new SMap.Marker(SMap.Coords.fromWGS84(0, 0), null, opts);
+			});
+		}
+	};
+});
+
+System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js", "panes/log.js", "positionmarker.js"], function (_export) {
+	"use strict";
+
+	var nav, itemStorage, pubsub, log, positionMarker, Detail;
 
 	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
@@ -635,6 +654,10 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js"], fu
 			itemStorage = _itemStorageJs;
 		}, function (_pubsubJs) {
 			pubsub = _pubsubJs;
+		}, function (_panesLogJs) {
+			log = _panesLogJs["default"];
+		}, function (_positionmarkerJs) {
+			positionMarker = _positionmarkerJs["default"];
 		}],
 		execute: function () {
 			Detail = (function () {
@@ -654,7 +677,13 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js"], fu
 					this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
 
 					this._layer = new SMap.Layer.Marker();
-					this._map.addLayer(this._layer).enable();
+					this._map.addLayer(this._layer);
+
+					this._positionMarker = positionMarker();
+					this._layer.addMarker(this._positionMarker);
+
+					this._marker = new SMap.Marker(SMap.Coords.fromWGS84(0, 0), null, { anchor: { left: 9, top: 9 } });
+					this._layer.addMarker(this._marker);
 
 					pubsub.subscribe("orientation-change", this);
 					pubsub.subscribe("position-change", this);
@@ -693,6 +722,7 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js"], fu
 
 								if (this._coords) {
 									this._map.setCenter(this._coords);
+									this._positionMarker.setCoords(this._coords);
 								}
 								break;
 						}
@@ -723,13 +753,9 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js"], fu
 						this._updateDistance();
 						this._updateCompass();
 
-						this._layer.removeAll();
-						var marker = new SMap.Marker(this._item.getCoords(), null, {
-							/* FIXME */
-							anchor: { left: 9, top: 9 },
-							url: this._item.getImage()
-						});
-						this._layer.addMarker(marker);
+						this._layer.enable();
+						this._marker.setCoords(this._item.getCoords());
+						this._marker.setURL(this._item.getImage());
 					}
 				}, {
 					key: "_updateCompass",
@@ -737,12 +763,14 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js"], fu
 						/* rotate map */
 						this._map.getContainer().style.transform = "rotate(" + this._angle + "deg)";
 
+						/* inverse rotate marker */
+						this._marker.getContainer()[SMap.LAYER_MARKER].style.transform = "rotate(" + -this._angle + "deg)";
+
 						/* rotate arrow */
 						var azimuth = 0;
 						if (this._coords && this._item) {
 							azimuth = this._coords.azimuth(this._item.getCoords());
 						}
-
 						/* this._angle CCW, azimuth CW, rotation transform CW */
 						this._arrow.style.transform = "rotate(" + (azimuth + this._angle) + "deg)";
 					}
@@ -1040,10 +1068,10 @@ System.register("panes/list.js", ["itemStorage.js", "pubsub.js", "panes/map.js",
 	};
 });
 
-System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js", "panes/log.js"], function (_export) {
+System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js", "panes/log.js", "positionmarker.js"], function (_export) {
 	"use strict";
 
-	var itemStorage, pubsub, detail, log, Map;
+	var itemStorage, pubsub, detail, log, positionMarker, Map;
 
 	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
@@ -1058,6 +1086,8 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 			detail = _panesDetailJs["default"];
 		}, function (_panesLogJs) {
 			log = _panesLogJs["default"];
+		}, function (_positionmarkerJs) {
+			positionMarker = _positionmarkerJs["default"];
 		}],
 		execute: function () {
 			Map = (function () {
@@ -1082,7 +1112,7 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 						url: node,
 						anchor: { left: 10, top: 10 }
 					};
-					this._positionMarker = new SMap.Marker(SMap.Coords.fromWGS84(0, 0), null, opts);
+					this._positionMarker = positionMarker();
 					this._positionLayer = new SMap.Layer.Marker();
 					this._positionLayer.addMarker(this._positionMarker);
 					this._map.addLayer(this._positionLayer);
@@ -1091,6 +1121,11 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 					this._map.getSignals().addListener(this, "marker-click", "_markerClick");
 
 					pubsub.subscribe("position-change", this);
+					/*
+     setInterval(() => {
+     	pubsub.publish("position-change", this, {coords:this._map.getCenter()});
+     }, 2000);
+     */
 				}
 
 				_createClass(Map, [{
@@ -1161,6 +1196,9 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 				}, {
 					key: "_markerClick",
 					value: function _markerClick(e) {
+						if (e.target == this._positionMarker) {
+							return;
+						}
 						detail.show(e.target.getId());
 					}
 				}]);

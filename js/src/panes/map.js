@@ -2,6 +2,7 @@ import * as itemStorage from "itemStorage.js";
 import * as pubsub from "pubsub.js";
 import detail from "panes/detail.js";
 import log from "panes/log.js";
+import positionMarker from "positionmarker.js";
 
 export default class Map {
 	constructor() {
@@ -23,7 +24,7 @@ export default class Map {
 			url: node,
 			anchor: {left: 10, top: 10}
 		}
-		this._positionMarker = new SMap.Marker(SMap.Coords.fromWGS84(0, 0), null, opts);
+		this._positionMarker = positionMarker();
 		this._positionLayer = new SMap.Layer.Marker();
 		this._positionLayer.addMarker(this._positionMarker);
 		this._map.addLayer(this._positionLayer);
@@ -32,6 +33,11 @@ export default class Map {
 		this._map.getSignals().addListener(this, "marker-click", "_markerClick");
 
 		pubsub.subscribe("position-change", this);
+		/*
+		setInterval(() => {
+			pubsub.publish("position-change", this, {coords:this._map.getCenter()});
+		}, 2000);
+		*/
 	}
 	
 	activate() {
@@ -84,6 +90,7 @@ export default class Map {
 	}
 
 	_markerClick(e) {
+		if (e.target == this._positionMarker) { return; }
 		detail.show(e.target.getId());
 	}
 }
