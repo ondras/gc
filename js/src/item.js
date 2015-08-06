@@ -1,3 +1,10 @@
+import log from "panes/log.js";
+import map from "panes/map.js";
+import Tile from "tile.js";
+import * as itemStorage from "itemStorage.js";
+import * as net from "net.js";
+import * as pubsub from "pubsub.js";
+
 export default class Item {
 	constructor(id, name) {
 		this._id = id;
@@ -5,11 +12,43 @@ export default class Item {
 		this._bestZoom = 0;
 		this._coords = null;
 		this._positions = [];
+		this._detail = null;
 	}
 
 	getId() { return this._id; }
 	getName() { return this._name; }
 	getCoords() { return this._coords; }
+	getImage(large) {
+		if (this._detail) {
+			return `tmp/gif-${large ? "large" : "small"}/${this._detail.type.value}.gif`;
+		} else {
+			return "tmp/unknown.gif";
+		}
+	}
+
+	build(parent) {
+//		log.debug("building item", this._id);
+		let heading = document.createElement("h2");
+		parent.appendChild(heading);
+
+		let img = document.createElement("img");
+		heading.appendChild(img);
+		img.src = this.getImage(true);
+
+		heading.appendChild(document.createTextNode(this._name));
+
+		this._checkBestPosition();
+
+		if (this._detail) {
+			this._buildDetail(parent);
+			if (!this._detail.available) { heading.classList.add("unavailable"); }
+		} else {
+			net.getDetail(this._id).then((response) => {
+				this._detail = response.data[0];
+				pubsub.publish("item-change", this);
+			});
+		}
+	}
 
 	addPosition(tile, x, y) {
 		if (tile.zoom < this._bestZoom) { return; } /* worse */
@@ -25,7 +64,7 @@ export default class Item {
 		return this;
 	}
 
-	computeCoords(projection) {
+	computeCoords() {
 		if (!this._positions.length) { return this; }
 
 		let bbox = {
@@ -36,7 +75,7 @@ export default class Item {
 		};
 
 		this._positions.forEach(position => {
-			let wgs = this._positionToWGS84(position, projection);
+			let wgs = this._positionToWGS84(position);
 			bbox.left = Math.min(bbox.left, wgs.x);
 			bbox.right = Math.max(bbox.right, wgs.x);
 			bbox.bottom = Math.min(bbox.bottom, wgs.y);
@@ -49,8 +88,9 @@ export default class Item {
 		return this;
 	}
 
+	_positionToWGS84(position) {
+		let projection = map.getProjection();
 
-	_positionToWGS84(position, projection) {
 		let resolution = 4; // tile pixels per json char
 		let {tile, x, y} = position;
 		let abs = tile.toPixel();
@@ -58,5 +98,46 @@ export default class Item {
 		abs.y += (y+0.5) * resolution;
 
 		return projection.unproject(abs, tile.zoom);
+	}
+
+	_checkBestPosition() {
+		if (this._bestZoom == 18) { 
+//			log.debug("already at best zoom");
+			return; 
+		}
+
+//		log.debug("now at zoom", this._bestZoom, "going +1");
+
+		let tile = Tile.fromCoords(this._coords, this._bestZoom+1);
+		return itemStorage.getTile(tile).then(() => {
+			this.computeCoords();
+			pubsub.publish("item-change", this);
+			return this._checkBestPosition();
+		});
+	}
+
+	_buildDetail(parent) {
+		let table = document.createElement("table");
+		parent.appendChild(table);
+
+		this._buildRow(table, "Type", this._detail.type.text);
+		this._buildRow(table, "Date", this._detail.hidden);
+		this._buildRow(table, "Created by", this._detail.owner.text);
+		this._buildRow(table, "Difficulty", this._detail.difficulty.text);
+		this._buildRow(table, "Size", this._detail.container.text);
+		this._buildRow(table, "Favorites", this._detail.fp);
+	}
+
+	_buildRow(table, first, second) {
+		let row = document.createElement("tr");
+		table.appendChild(row);
+
+		let td = document.createElement("td");
+		row.appendChild(td);
+		td.appendChild(document.createTextNode(first));
+
+		td = document.createElement("td");
+		row.appendChild(td);
+		td.appendChild(document.createTextNode(second));
 	}
 }

@@ -24,6 +24,8 @@ class Log {
 		this._node.insertBefore(row, this._node.firstChild);
 
 		this._ts = ts;
+
+		console.log(...data);
 	}
 }
 

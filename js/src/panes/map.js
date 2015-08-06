@@ -1,6 +1,7 @@
 import * as itemStorage from "itemStorage.js";
-import detail from "detail/detail.js";
-import log from "log/log.js";
+import * as pubsub from "pubsub.js";
+import detail from "panes/detail.js";
+import log from "panes/log.js";
 
 export default class Map {
 	constructor() {
@@ -8,12 +9,12 @@ export default class Map {
 		sz: 	14.1596, 49.41298 15
 		lipno: 14.16876, 48.66177 13 
 		*/
-		this._map = new SMap(document.querySelector("#map"), SMap.Coords.fromWGS84(14.16876, 48.66177), 14);
+		this._map = new SMap(document.querySelector("#map"), SMap.Coords.fromWGS84(14.164768872985832, 48.65760300916347), 14);
 		this._map.addControl(new SMap.Control.Sync({bottomSpace:0}));
 		this._map.addDefaultControls();
 		this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
 		
-		this._markers = new SMap.Layer.Marker();
+		this._markers = new SMap.Layer.Marker("items");
 		this._map.addLayer(this._markers).enable();
 
 		let node = document.createElement("div");
@@ -29,22 +30,30 @@ export default class Map {
 
 		this._map.getSignals().addListener(this, "map-redraw", "_mapRedraw");
 		this._map.getSignals().addListener(this, "marker-click", "_markerClick");
+
+		pubsub.subscribe("position-change", this);
 	}
 	
-	init() {
-		this._mapRedraw();
+	activate() {
+		this._map.syncPort();
 	}
 
-	activate() {}
 	deactivate() {}
 
-	setPosition(position) {
-		if (position) {
-			this._positionMarker.setCoords(position);
-			this._positionLayer.enable();
-			this._map.setCenter(position);
-		} else {
-			this._positionLayer.disable();
+	getCenter() { return this._map.getCenter(); }
+	getProjection() { return this._map.getProjection(); }
+
+	handleMessage(message, publisher, data) {
+		switch (message) {
+			case "position-change":
+				if (data.coords) {
+					this._positionMarker.setCoords(data.coords);
+					this._positionLayer.enable();
+					this._map.setCenter(data.coords);
+				} else {
+					this._positionLayer.disable();
+				}
+			break;
 		}
 	}
 
@@ -63,7 +72,12 @@ export default class Map {
 
 		let markers = items.map(item => {
 			let coords = item.getCoords();
-			return new SMap.Marker(coords, item.getId(), {title:item.getName()});
+			let options = {
+				title: item.getName(),
+				url: item.getImage(),
+				anchor: {left:9, top:9}
+			}
+			return new SMap.Marker(coords, item.getId(), options);
 		});
 
 		this._markers.addMarker(markers);

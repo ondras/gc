@@ -1,4 +1,4 @@
-import log from "log/log.js";
+import log from "panes/log.js";
 
 const tileServers = 4;
 const expando = `1.9.1${Math.random()}`.replace(/\D/g, "");

@@ -1,10 +1,11 @@
 import * as nav from "nav.js";
-import * as geolocation from "geolocation.js";
-import log from "log/log.js";
-import map from "map/map.js";
+import log from "panes/log.js";
+import status from "panes/status.js";
 
-log.log("app starting")
-geolocation.init();
-map.init();
+window.addEventListener("error", e => {
+	log.error(e.error.message);
+});
 
+log.log("app starting");
 nav.go("map");
+status.start();
