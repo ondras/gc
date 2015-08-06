@@ -18,23 +18,30 @@ export default class Item {
 	getId() { return this._id; }
 	getName() { return this._name; }
 	getCoords() { return this._coords; }
+	getImage(large) {
+		if (this._detail) {
+			return `tmp/gif-${large ? "large" : "small"}/${this._detail.type.value}.gif`;
+		} else {
+			return "tmp/unknown.gif";
+		}
+	}
 
 	build(parent) {
 //		log.debug("building item", this._id);
 		let heading = document.createElement("h2");
 		parent.appendChild(heading);
+
+		let img = document.createElement("img");
+		heading.appendChild(img);
+		img.src = this.getImage(true);
+
 		heading.appendChild(document.createTextNode(this._name));
 
 		this._checkBestPosition();
 
 		if (this._detail) {
 			this._buildDetail(parent);
-
 			if (!this._detail.available) { heading.classList.add("unavailable"); }
-			let img = document.createElement("img");
-			img.src = `tmp/gif-large/${this._detail.type.value}.gif`;
-			heading.insertBefore(img, heading.firstChild);
-
 		} else {
 			net.getDetail(this._id).then((response) => {
 				this._detail = response.data[0];

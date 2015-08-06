@@ -19,12 +19,34 @@ nav ul li a {
 nav ul li a.active {
   background-color: #eee;
 }
+#map #items-3 img {
+  cursor: pointer;
+  border: 1px solid black;
+  border-radius: 3px;
+  background-color: #fff;
+}
+#list li {
+  list-style: none;
+  cursor: pointer;
+  line-height: 2;
+}
+#list li img {
+  margin-right: 0.3em;
+  vertical-align: middle;
+}
 #detail .unavailable {
   text-decoration: line-through;
 }
 #detail h2 img {
   vertical-align: middle;
   margin-right: 0.3em;
+}
+#detail #compass {
+  margin: 1em auto;
+  width: 2em;
+  font-size: 500%;
+  color: red;
+  text-align: center;
 }
 #status li {
   list-style: none;
@@ -47,10 +69,10 @@ nav ul li a.active {
 #status li.waiting::before {
   background-color: #ff0;
 }
-#status li#position span:not(:empty)::before {
+#status li span:not(:empty)::before {
   content: "(";
 }
-#status li#position span:not(:empty)::after {
+#status li span:not(:empty)::after {
   content: ")";
 }
 #log {
