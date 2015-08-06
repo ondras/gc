@@ -121,10 +121,10 @@ System.register("panes/log.js", [], function (_export) {
 	};
 });
 
-System.register("panes/list.js", ["itemStorage.js", "panes/map.js", "panes/detail.js"], function (_export) {
+System.register("panes/list.js", ["itemStorage.js", "pubsub.js", "panes/map.js", "panes/detail.js"], function (_export) {
 	"use strict";
 
-	var itemStorage, map, detail, List;
+	var itemStorage, pubsub, map, detail, List;
 
 	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
@@ -133,6 +133,8 @@ System.register("panes/list.js", ["itemStorage.js", "panes/map.js", "panes/detai
 	return {
 		setters: [function (_itemStorageJs) {
 			itemStorage = _itemStorageJs;
+		}, function (_pubsubJs) {
+			pubsub = _pubsubJs;
 		}, function (_panesMapJs) {
 			map = _panesMapJs["default"];
 		}, function (_panesDetailJs) {
@@ -152,7 +154,7 @@ System.register("panes/list.js", ["itemStorage.js", "panes/map.js", "panes/detai
 					value: function activate() {
 						var _this = this;
 
-						var center = map.getCenter();
+						var center = map.getCenter(); /* FIXME *map* center? or geolocation? */
 						var items = itemStorage.getNearby(center, 10);
 
 						this._node.innerHTML = "";
@@ -283,7 +285,7 @@ System.register("panes/status.js", ["panes/log.js", "pubsub.js"], function (_exp
 								this._orientation.className = "good";
 								this._orientation.querySelector("span").innerHTML = e.alpha.toFixed(2) + "°";
 
-								pubsub.publish("orientation-change", this, { alpha: e.alpha });
+								pubsub.publish("orientation-change", this, { angle: e.alpha });
 								break;
 						}
 					}
@@ -297,6 +299,7 @@ System.register("panes/status.js", ["panes/log.js", "pubsub.js"], function (_exp
 							log.log("we are offline");
 							this._online.className = "bad";
 						}
+						pubsub.publish("network-change", this, { onLine: navigator.onLine });
 					}
 				}]);
 
@@ -331,14 +334,19 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js"], fu
 					_classCallCheck(this, Detail);
 
 					this._node = document.querySelector("#detail");
+					this._distance = this._node.querySelector("#distance");
+					this._compass = this._node.querySelector("#compass");
 
-					this._compass = document.createElement("div");
-					this._node.appendChild(this._compass);
-					this._compass.id = "compass";
-					this._compass.innerHTML = "&uArr;";
-
-					this._alpha = 0;
+					this._angle = 0;
 					this._coords = null;
+
+					this._arrow = this._compass.querySelector(".arrow");
+
+					this._map = new SMap(this._compass.querySelector(".smap"), null, 20);
+					this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
+
+					this._layer = new SMap.Layer.Marker();
+					this._map.addLayer(this._layer).enable();
 
 					pubsub.subscribe("orientation-change", this);
 					pubsub.subscribe("position-change", this);
@@ -366,13 +374,18 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js"], fu
 								break;
 
 							case "orientation-change":
-								this._alpha = data.alpha;
+								this._angle = data.angle;
 								this._updateCompass();
 								break;
 
 							case "position-change":
 								this._coords = data.coords;
+								this._updateDistance();
 								this._updateCompass();
+
+								if (this._coords) {
+									this._map.setCenter(this._coords);
+								}
 								break;
 						}
 					}
@@ -396,12 +409,45 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js"], fu
 						this._node.innerHTML = "";
 						this._item.build(this._node);
 
+						this._node.appendChild(this._distance);
 						this._node.appendChild(this._compass);
+
+						this._updateDistance();
+						this._updateCompass();
+
+						this._layer.removeAll();
+						var marker = new SMap.Marker(this._item.getCoords(), null, {
+							/* FIXME */
+							anchor: { left: 9, top: 9 },
+							url: this._item.getImage()
+						});
+						this._layer.addMarker(marker);
 					}
 				}, {
 					key: "_updateCompass",
 					value: function _updateCompass() {
-						this._compass.style.transform = "rotate(" + this._alpha + "deg)";
+						/* rotate map */
+						this._map.getContainer().style.transform = "rotate(" + this._angle + "deg)";
+
+						/* rotate arrow */
+						var azimuth = 0;
+						if (this._coords && this._item) {
+							azimuth = this._coords.azimuth(this._item.getCoords());
+						}
+
+						/* this._angle CCW, azimuth CW, rotation transform CW */
+						this._arrow.style.transform = "rotate(" + (azimuth + this._angle) + "deg)";
+					}
+				}, {
+					key: "_updateDistance",
+					value: function _updateDistance() {
+						if (!this._coords || !this._item) {
+							this._distance.innerHTML = "";
+							return;
+						}
+
+						var distance = this._coords.distance(this._item.getCoords());
+						this._distance.innerHTML = distance.toFixed(2) + "m";
 					}
 				}]);
 
@@ -441,7 +487,7 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
      sz: 	14.1596, 49.41298 15
      lipno: 14.16876, 48.66177 13 
      */
-					this._map = new SMap(document.querySelector("#map"), SMap.Coords.fromWGS84(14.16876, 48.66177), 14);
+					this._map = new SMap(document.querySelector("#map"), SMap.Coords.fromWGS84(14.164768872985832, 48.65760300916347), 14);
 					this._map.addControl(new SMap.Control.Sync({ bottomSpace: 0 }));
 					this._map.addDefaultControls();
 					this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
@@ -831,24 +877,28 @@ System.register("tile.js", ["panes/map.js"], function (_export) {
 });
 
 System.register("app.js", ["nav.js", "panes/log.js", "panes/status.js"], function (_export) {
-  "use strict";
+	"use strict";
 
-  var nav, log, status;
-  return {
-    setters: [function (_navJs) {
-      nav = _navJs;
-    }, function (_panesLogJs) {
-      log = _panesLogJs["default"];
-    }, function (_panesStatusJs) {
-      status = _panesStatusJs["default"];
-    }],
-    execute: function () {
+	var nav, log, status;
+	return {
+		setters: [function (_navJs) {
+			nav = _navJs;
+		}, function (_panesLogJs) {
+			log = _panesLogJs["default"];
+		}, function (_panesStatusJs) {
+			status = _panesStatusJs["default"];
+		}],
+		execute: function () {
 
-      log.log("app starting");
-      nav.go("map");
-      status.start();
-    }
-  };
+			window.addEventListener("error", function (e) {
+				log.error(e.error.message);
+			});
+
+			log.log("app starting");
+			nav.go("map");
+			status.start();
+		}
+	};
 });
 
 System.register("nav.js", ["panes/map.js", "panes/list.js", "panes/detail.js", "panes/status.js", "panes/log.js"], function (_export) {

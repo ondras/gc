@@ -1,4 +1,5 @@
 import * as itemStorage from "itemStorage.js";
+import * as pubsub from "pubsub.js";
 import map from "panes/map.js";
 import detail from "panes/detail.js";
 
@@ -9,7 +10,7 @@ class List {
 	}
 
 	activate() {
-		let center = map.getCenter();
+		let center = map.getCenter(); /* FIXME *map* center? or geolocation? */
 		let items = itemStorage.getNearby(center, 10);
 
 		this._node.innerHTML = "";

@@ -1,5 +1,6 @@
 body {
   margin: 0;
+  font-family: droid sans, sans-serif;
 }
 nav ul {
   list-style: none;
@@ -41,12 +42,47 @@ nav ul li a.active {
   vertical-align: middle;
   margin-right: 0.3em;
 }
-#detail #compass {
-  margin: 1em auto;
-  width: 2em;
-  font-size: 500%;
-  color: red;
+#detail #distance {
+  font-size: 150%;
   text-align: center;
+  margin: 1em 0;
+}
+#detail #distance:not(:empty)::before {
+  content: "Distance: ";
+}
+#detail #compass {
+  margin: 1.5em auto;
+  position: relative;
+  width: 50vw;
+  height: 50vw;
+  border: 1px solid #000;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #333;
+}
+#detail #compass > div {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+#detail #compass .arrow::before {
+  content: "▲";
+  position: absolute;
+  left: 0;
+  top: -1.1em;
+  font-size: 200%;
+  width: 100%;
+  text-align: center;
+  color: #f00;
+}
+#detail #compass .smap {
+  border-radius: 50%;
+  /* webkit bug: when child has transform, this parent stops overflowing. adding transform to parent fixes the issue. */
+  transform: scale(1);
+}
+#detail #compass .smap .hud {
+  display: none;
 }
 #status li {
   list-style: none;

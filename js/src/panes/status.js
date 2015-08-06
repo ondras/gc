@@ -58,10 +58,10 @@ class Status {
 
 			case "deviceorientation":
 //				log.debug("alpha", e.alpha);
-				this._orientation.className = "good"; 
+				this._orientation.className = "good";
 				this._orientation.querySelector("span").innerHTML = `${e.alpha.toFixed(2)}°`;
 
-				pubsub.publish("orientation-change", this, {alpha:e.alpha});
+				pubsub.publish("orientation-change", this, {angle:e.alpha});
 			break;
 		}
 	}
@@ -74,6 +74,7 @@ class Status {
 			log.log("we are offline");
 			this._online.className = "bad";
 		}
+		pubsub.publish("network-change", this, {onLine:navigator.onLine});
 	}
 }
 

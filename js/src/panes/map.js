@@ -9,7 +9,7 @@ export default class Map {
 		sz: 	14.1596, 49.41298 15
 		lipno: 14.16876, 48.66177 13 
 		*/
-		this._map = new SMap(document.querySelector("#map"), SMap.Coords.fromWGS84(14.16876, 48.66177), 14);
+		this._map = new SMap(document.querySelector("#map"), SMap.Coords.fromWGS84(14.164768872985832, 48.65760300916347), 14);
 		this._map.addControl(new SMap.Control.Sync({bottomSpace:0}));
 		this._map.addDefaultControls();
 		this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
