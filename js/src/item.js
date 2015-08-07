@@ -133,6 +133,7 @@ export default class Item {
 		this._buildRow(table, "Date", this._detail.hidden);
 		this._buildRow(table, "Created by", this._detail.owner.text);
 		this._buildRow(table, "Difficulty", this._detail.difficulty.text);
+		this._buildRow(table, "Terrain", this._detail.terrain.text);
 		this._buildRow(table, "Size", this._detail.container.text);
 		this._buildRow(table, "Favorites", this._detail.fp);
 	}

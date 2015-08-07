@@ -352,6 +352,7 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js", "pa
 					this._arrow = this._compass.querySelector(".arrow");
 
 					this._map = new SMap(this._compass.querySelector(".smap"), null, 20);
+					this._map.addControl(new SMap.Control.Sync());
 					this._layers.tile = this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
 
 					this._map.addLayer(this._layers.marker);
@@ -430,8 +431,9 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js", "pa
 						this._node.innerHTML = "";
 						this._item.build(this._node);
 
-						this._node.appendChild(this._distance);
-						this._node.appendChild(this._compass);
+						var heading = this._node.querySelector("h2");
+						heading.parentNode.insertBefore(this._distance, heading.nextSibling);
+						heading.parentNode.insertBefore(this._compass, heading.nextSibling);
 
 						this._updateDistance();
 						this._updateRotation();
@@ -536,11 +538,6 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 					this._map.getSignals().addListener(this, "marker-click", "_markerClick");
 
 					pubsub.subscribe("position-change", this);
-					/*		
-     		setInterval(() => {
-     			pubsub.publish("position-change", this, {coords:this._map.getCenter()});
-     		}, 2000);
-     */
 				}
 
 				_createClass(Map, [{
@@ -1204,6 +1201,7 @@ System.register("item.js", ["panes/log.js", "panes/map.js", "tile.js", "itemStor
 						this._buildRow(table, "Date", this._detail.hidden);
 						this._buildRow(table, "Created by", this._detail.owner.text);
 						this._buildRow(table, "Difficulty", this._detail.difficulty.text);
+						this._buildRow(table, "Terrain", this._detail.terrain.text);
 						this._buildRow(table, "Size", this._detail.container.text);
 						this._buildRow(table, "Favorites", this._detail.fp);
 					}

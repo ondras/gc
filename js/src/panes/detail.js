@@ -21,6 +21,7 @@ class Detail {
 		this._arrow = this._compass.querySelector(".arrow");
 
 		this._map = new SMap(this._compass.querySelector(".smap"), null, 20);
+		this._map.addControl(new SMap.Control.Sync());
 		this._layers.tile = this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
 
 		this._map.addLayer(this._layers.marker);
@@ -87,8 +88,9 @@ class Detail {
 		this._node.innerHTML = "";
 		this._item.build(this._node);
 
-		this._node.appendChild(this._distance);
-		this._node.appendChild(this._compass);
+		let heading = this._node.querySelector("h2");
+		heading.parentNode.insertBefore(this._distance, heading.nextSibling);
+		heading.parentNode.insertBefore(this._compass, heading.nextSibling);
 
 		this._updateDistance();
 		this._updateRotation();
