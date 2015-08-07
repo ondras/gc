@@ -22,7 +22,7 @@ class Detail {
 
 		this._map = new SMap(this._compass.querySelector(".smap"), null, 20);
 		this._map.addControl(new SMap.Control.Sync());
-		this._layers.tile = this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
+		this._layers.tile = this._map.addDefaultLayer(SMap.DEF_TURIST);
 
 		this._map.addLayer(this._layers.marker);
 

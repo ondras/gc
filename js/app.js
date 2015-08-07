@@ -353,7 +353,7 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js", "pa
 
 					this._map = new SMap(this._compass.querySelector(".smap"), null, 20);
 					this._map.addControl(new SMap.Control.Sync());
-					this._layers.tile = this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
+					this._layers.tile = this._map.addDefaultLayer(SMap.DEF_TURIST);
 
 					this._map.addLayer(this._layers.marker);
 
@@ -956,6 +956,8 @@ System.register("nav.js", ["panes/map.js", "panes/list.js", "panes/detail.js", "
 			return;
 		}
 
+		location.hash = what;
+
 		for (var id in components) {
 			var section = document.querySelector("#" + id);
 			if (id == what) {
@@ -1003,6 +1005,15 @@ System.register("nav.js", ["panes/map.js", "panes/list.js", "panes/detail.js", "
 						if (links[id] == e.target) {
 							go(id);
 						}
+					}
+				}
+			});
+
+			window.addEventListener("hashchange", {
+				handleEvent: function handleEvent(e) {
+					var hash = location.hash.substring(1);
+					if (hash in components) {
+						go(hash);
 					}
 				}
 			});
