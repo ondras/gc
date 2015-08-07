@@ -507,8 +507,6 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 		execute: function () {
 			Map = (function () {
 				function Map() {
-					var _this = this;
-
 					_classCallCheck(this, Map);
 
 					/*
@@ -538,10 +536,11 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 					this._map.getSignals().addListener(this, "marker-click", "_markerClick");
 
 					pubsub.subscribe("position-change", this);
-
-					setInterval(function () {
-						pubsub.publish("position-change", _this, { coords: _this._map.getCenter() });
-					}, 2000);
+					/*		
+     		setInterval(() => {
+     			pubsub.publish("position-change", this, {coords:this._map.getCenter()});
+     		}, 2000);
+     */
 				}
 
 				_createClass(Map, [{
@@ -580,7 +579,7 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 				}, {
 					key: "_mapRedraw",
 					value: function _mapRedraw() {
-						var _this2 = this;
+						var _this = this;
 
 						var zoom = this._map.getZoom();
 						if (zoom < 13) {
@@ -589,7 +588,7 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 						}
 
 						itemStorage.getInViewport(this._map).then(function (items) {
-							return _this2._render(items);
+							return _this._render(items);
 						});
 					}
 				}, {

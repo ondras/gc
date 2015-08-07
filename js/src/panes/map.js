@@ -33,11 +33,11 @@ export default class Map {
 		this._map.getSignals().addListener(this, "marker-click", "_markerClick");
 
 		pubsub.subscribe("position-change", this);
-		
+/*		
 		setInterval(() => {
 			pubsub.publish("position-change", this, {coords:this._map.getCenter()});
 		}, 2000);
-		
+*/		
 	}
 	
 	activate() {
