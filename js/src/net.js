@@ -1,8 +1,12 @@
 import log from "panes/log.js";
+import * as pubsub from "pubsub.js";
 
 const tileServers = 4;
 const expando = `1.9.1${Math.random()}`.replace(/\D/g, "");
 let nonce = Date.now();
+
+let onLine = false;
+pubsub.subscribe("network-change", (message, publisher, data) => {onLine = data.onLine});
 
 function image(url) {
 	return new Promise((resolve, reject) => {
@@ -34,7 +38,14 @@ function jsonp(url) {
 	});
 }
 
+function rejectOffline() {
+	let error = new Error("Offline");
+	return Promise.reject(error);
+}
+
 export function getTile(tile) {
+	if (!onLine) { return rejectOffline(); }
+
 	let server = ((tile.x+tile.y) % tileServers) + 1;
 	let base = `https://tiles0${server}.geocaching.com`;
 	let imgUrl = `${base}/map.png?x=${tile.x}&y=${tile.y}&z=${tile.zoom}&ts=1`;
@@ -48,5 +59,6 @@ export function getTile(tile) {
 }
 
 export function getDetail(id) {
+	if (!onLine) { return rejectOffline(); }
 	return jsonp(`https://tiles01.geocaching.com/map.details?i=${id}`);
 }

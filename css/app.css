@@ -39,6 +39,12 @@ nav ul li a.active {
   border-radius: 3px;
   background-color: #fff;
 }
+.smap .hud label {
+  box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 2px;
+}
 #list li {
   list-style: none;
   cursor: pointer;
@@ -51,9 +57,20 @@ nav ul li a.active {
 #detail .unavailable {
   text-decoration: line-through;
 }
+#detail h2 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 #detail h2 img {
   vertical-align: middle;
   margin-right: 0.3em;
+}
+#detail table td:first-child {
+  font-weight: bold;
+}
+#detail table td:first-child::after {
+  content: ":";
 }
 #detail #distance {
   font-size: 150%;

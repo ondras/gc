@@ -3,7 +3,7 @@ import * as pubsub from "pubsub.js";
 
 class Status {
 	constructor() {
-		this._online = document.querySelector("#status #online");
+		this._network = document.querySelector("#status #network");
 		this._position = document.querySelector("#status #position");
 		this._orientation = document.querySelector("#status #orientation");
 
@@ -59,7 +59,7 @@ class Status {
 			case "deviceorientation":
 //				log.debug("alpha", e.alpha);
 				this._orientation.className = "good";
-				this._orientation.querySelector("span").innerHTML = `${e.alpha === null ? "null" : e.alpha.toFixed(2)}°`;
+				this._orientation.querySelector("span").innerHTML = (e.alpha === null ? "null" : `${e.alpha.toFixed(2)}°`);
 
 				pubsub.publish("orientation-change", this, {angle:e.alpha});
 			break;
@@ -69,10 +69,10 @@ class Status {
 	_syncOnline() {
 		if (navigator.onLine) {
 			log.log("we are online");
-			this._online.className = "good";
+			this._network.className = "good";
 		} else {
 			log.log("we are offline");
-			this._online.className = "bad";
+			this._network.className = "bad";
 		}
 		pubsub.publish("network-change", this, {onLine:navigator.onLine});
 	}

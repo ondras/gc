@@ -20,7 +20,7 @@ class Detail {
 
 		this._arrow = this._compass.querySelector(".arrow");
 
-		this._map = new SMap(this._compass.querySelector(".smap"), null, 20);
+		this._map = new SMap(this._compass.querySelector(".smap"), null, 18);
 		this._map.addControl(new SMap.Control.Sync());
 		this._layers.tile = this._map.addDefaultLayer(SMap.DEF_TURIST);
 
@@ -31,6 +31,7 @@ class Detail {
 
 		pubsub.subscribe("orientation-change", this);
 		pubsub.subscribe("position-change", this);
+		pubsub.subscribe("network-change", this);
 	}
 
 	activate() {
@@ -53,6 +54,14 @@ class Detail {
 				this._updateRotation();
 			break;
 
+			case "network-change":
+				if (data.onLine) {
+					this._layers.tile.enable();
+				} else {
+					this._layers.tile.disable();
+				}
+			break;
+
 			case "position-change":
 				this._coords = data.coords;
 
@@ -62,10 +71,11 @@ class Detail {
 				if (this._coords) {
 					this._map.setCenter(this._coords);
 					this._positionMarker.setCoords(this._coords);
-					for (let p in this._layers) { this._layers[p].enable(); }
+					this._layers.marker.enable();
 				} else {
-					for (let p in this._layers) { this._layers[p].disable(); }
+					this._layers.marker.disable();
 				}
+
 			break;
 		}
 	}

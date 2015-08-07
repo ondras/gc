@@ -20,9 +20,9 @@ export default class Item {
 	getCoords() { return this._coords; }
 	getImage(large) {
 		if (this._detail) {
-			return `tmp/gif-${large ? "large" : "small"}/${this._detail.type.value}.gif`;
+			return `img/${large ? "large" : "small"}/${this._detail.type.value}.gif`;
 		} else {
-			return "tmp/unknown.gif";
+			return "img/unknown.gif";
 		}
 	}
 
@@ -129,13 +129,18 @@ export default class Item {
 		let table = document.createElement("table");
 		parent.appendChild(table);
 
-		this._buildRow(table, "Type", this._detail.type.text);
-		this._buildRow(table, "Date", this._detail.hidden);
-		this._buildRow(table, "Created by", this._detail.owner.text);
-		this._buildRow(table, "Difficulty", this._detail.difficulty.text);
-		this._buildRow(table, "Terrain", this._detail.terrain.text);
-		this._buildRow(table, "Size", this._detail.container.text);
-		this._buildRow(table, "Favorites", this._detail.fp);
+		let d = this._detail;
+		this._buildRow(table, "Type", d.type.text);
+		this._buildRow(table, "Created", `${d.owner.text}, ${d.hidden}`);
+		this._buildRow(table, "Difficulty, Terrain", `${d.difficulty.text}/5, ${d.difficulty.text}/5`);
+		this._buildRow(table, "Size", d.container.text);
+		this._buildRow(table, "Favorites", d.fp);
+
+		let a = document.createElement("a");
+		a.target = "_blank";
+		a.href = `http://www.geocaching.com/geocache/${this._id}_${encodeURIComponent(this._name)}`;
+		a.innerHTML = "geocaching.com";
+		this._buildRow(table, "Detail", a);
 	}
 
 	_buildRow(table, first, second) {
@@ -148,6 +153,10 @@ export default class Item {
 
 		td = document.createElement("td");
 		row.appendChild(td);
-		td.appendChild(document.createTextNode(second));
+		if (typeof(second) == "string") {
+			td.appendChild(document.createTextNode(second));
+		} else {
+			td.appendChild(second);
+		}
 	}
 }

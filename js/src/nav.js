@@ -24,16 +24,15 @@ ul.addEventListener("click", {
 
 window.addEventListener("hashchange", {
 	handleEvent(e) {
-		let hash = location.hash.substring(1);
+		let hash = location.hash.substring(2);
 		if (hash in components) { go(hash); }
 	}
-})
-
+});
 
 export function go(what) {
 	if (current == what) { return; }
 
-	location.hash = what;
+	location.hash = `!${what}`;
 
 	for (let id in components) {
 		let section = document.querySelector(`#${id}`);

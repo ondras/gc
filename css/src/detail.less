@@ -3,9 +3,23 @@
 		text-decoration: line-through;
 	}
 
-	h2 img {
-		vertical-align: middle;
-		margin-right: 0.3em;
+	h2 {
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+
+		img {
+			vertical-align: middle;
+			margin-right: 0.3em;
+		}
+	}
+
+	table td:first-child {
+		font-weight: bold;
+
+		&::after {
+			content: ":";
+		}
 	}
 
 	#distance {

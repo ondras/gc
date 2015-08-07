@@ -25,7 +25,7 @@ class Log {
 
 		this._ts = ts;
 
-		console.log(...data);
+//		console.log(...data);
 	}
 }
 

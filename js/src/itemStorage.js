@@ -12,6 +12,7 @@ export function getById(id) {
 }
 
 export function getInViewport(map) {
+	log.debug("listing viewport");
 	let half = map.getSize().clone().scale(0.5);
 	let w = half.x;
 	let h = half.y;
@@ -28,7 +29,6 @@ export function getInViewport(map) {
 			let tile = Tile.fromPixel(center, i, j, zoom);
 
 			if (tile in usedTiles) { continue; }
-			usedTiles[tile] = true;
 			if (tileHasEmptyParent(tile)) { continue; }
 
 			let promise = this.getTile(tile);
@@ -57,6 +57,8 @@ export function getNearby(center, limit) {
 }
 
 function parseTileData(data, tile) {
+	usedTiles[tile] = true;
+
 	if (!data) { 
 		emptyTiles[tile] = tile;
 		return;

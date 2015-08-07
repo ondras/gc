@@ -45,8 +45,6 @@ System.register("panes/log.js", [], function (_export) {
 
 	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
-	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
-
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	return {
@@ -109,7 +107,7 @@ System.register("panes/log.js", [], function (_export) {
 
 						this._ts = ts;
 
-						console.log.apply(console, _toConsumableArray(data));
+						//		console.log(...data);
 					}
 				}]);
 
@@ -121,10 +119,10 @@ System.register("panes/log.js", [], function (_export) {
 	};
 });
 
-System.register("panes/list.js", ["itemStorage.js", "pubsub.js", "panes/map.js", "panes/detail.js"], function (_export) {
+System.register("panes/list.js", ["itemStorage.js", "pubsub.js", "panes/map.js", "panes/detail.js", "panes/log.js"], function (_export) {
 	"use strict";
 
-	var itemStorage, pubsub, map, detail, List;
+	var itemStorage, pubsub, map, detail, log, List;
 
 	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
@@ -139,6 +137,8 @@ System.register("panes/list.js", ["itemStorage.js", "pubsub.js", "panes/map.js",
 			map = _panesMapJs["default"];
 		}, function (_panesDetailJs) {
 			detail = _panesDetailJs["default"];
+		}, function (_panesLogJs) {
+			log = _panesLogJs["default"];
 		}],
 		execute: function () {
 			List = (function () {
@@ -155,6 +155,7 @@ System.register("panes/list.js", ["itemStorage.js", "pubsub.js", "panes/map.js",
 						var _this = this;
 
 						var center = map.getCenter(); /* FIXME *map* center? or geolocation? */
+						log.debug("listing around", center.toWGS84());
 						var items = itemStorage.getNearby(center, 10);
 
 						this._node.innerHTML = "";
@@ -219,7 +220,7 @@ System.register("panes/status.js", ["panes/log.js", "pubsub.js"], function (_exp
 				function Status() {
 					_classCallCheck(this, Status);
 
-					this._online = document.querySelector("#status #online");
+					this._network = document.querySelector("#status #network");
 					this._position = document.querySelector("#status #position");
 					this._orientation = document.querySelector("#status #orientation");
 
@@ -283,7 +284,7 @@ System.register("panes/status.js", ["panes/log.js", "pubsub.js"], function (_exp
 							case "deviceorientation":
 								//				log.debug("alpha", e.alpha);
 								this._orientation.className = "good";
-								this._orientation.querySelector("span").innerHTML = (e.alpha === null ? "null" : e.alpha.toFixed(2)) + "°";
+								this._orientation.querySelector("span").innerHTML = e.alpha === null ? "null" : e.alpha.toFixed(2) + "°";
 
 								pubsub.publish("orientation-change", this, { angle: e.alpha });
 								break;
@@ -294,10 +295,10 @@ System.register("panes/status.js", ["panes/log.js", "pubsub.js"], function (_exp
 					value: function _syncOnline() {
 						if (navigator.onLine) {
 							log.log("we are online");
-							this._online.className = "good";
+							this._network.className = "good";
 						} else {
 							log.log("we are offline");
-							this._online.className = "bad";
+							this._network.className = "bad";
 						}
 						pubsub.publish("network-change", this, { onLine: navigator.onLine });
 					}
@@ -351,7 +352,7 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js", "pa
 
 					this._arrow = this._compass.querySelector(".arrow");
 
-					this._map = new SMap(this._compass.querySelector(".smap"), null, 20);
+					this._map = new SMap(this._compass.querySelector(".smap"), null, 18);
 					this._map.addControl(new SMap.Control.Sync());
 					this._layers.tile = this._map.addDefaultLayer(SMap.DEF_TURIST);
 
@@ -362,6 +363,7 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js", "pa
 
 					pubsub.subscribe("orientation-change", this);
 					pubsub.subscribe("position-change", this);
+					pubsub.subscribe("network-change", this);
 				}
 
 				_createClass(Detail, [{
@@ -390,6 +392,14 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js", "pa
 								this._updateRotation();
 								break;
 
+							case "network-change":
+								if (data.onLine) {
+									this._layers.tile.enable();
+								} else {
+									this._layers.tile.disable();
+								}
+								break;
+
 							case "position-change":
 								this._coords = data.coords;
 
@@ -399,14 +409,11 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js", "pa
 								if (this._coords) {
 									this._map.setCenter(this._coords);
 									this._positionMarker.setCoords(this._coords);
-									for (var p in this._layers) {
-										this._layers[p].enable();
-									}
+									this._layers.marker.enable();
 								} else {
-									for (var p in this._layers) {
-										this._layers[p].disable();
-									}
+									this._layers.marker.disable();
 								}
+
 								break;
 						}
 					}
@@ -485,10 +492,10 @@ System.register("panes/detail.js", ["nav.js", "itemStorage.js", "pubsub.js", "pa
 	};
 });
 
-System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js", "panes/log.js", "positionmarker.js"], function (_export) {
+System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js", "panes/log.js", "positionmarker.js", "followcontrol.js"], function (_export) {
 	"use strict";
 
-	var itemStorage, pubsub, detail, log, positionMarker, Map;
+	var itemStorage, pubsub, detail, log, positionMarker, followControl, Map;
 
 	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
@@ -505,39 +512,55 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 			log = _panesLogJs["default"];
 		}, function (_positionmarkerJs) {
 			positionMarker = _positionmarkerJs["default"];
+		}, function (_followcontrolJs) {
+			followControl = _followcontrolJs["default"];
 		}],
 		execute: function () {
 			Map = (function () {
 				function Map() {
 					_classCallCheck(this, Map);
 
+					this._onLine = false;
+					this._layers = {
+						tile: null,
+						markers: new SMap.Layer.Marker(),
+						position: new SMap.Layer.Marker()
+					};
 					/*
      sz: 	14.1596, 49.41298 15
      lipno: 14.16876, 48.66177 13 
      */
-					this._map = new SMap(document.querySelector("#map"), SMap.Coords.fromWGS84(14.164768872985832, 48.65760300916347), 14);
+					var center = JSON.parse(localStorage.getItem("gc-center"));
+					if (!center) {
+						center = [14.164768872985832, 48.65760300916347];
+					}
+					center = SMap.Coords.fromWGS84(center[0], center[1]);
+
+					var zoom = Number(localStorage.getItem("gc-zoom"));
+					if (!zoom) {
+						zoom = 14;
+					}
+
+					this._map = new SMap(document.querySelector("#map"), center, zoom);
 					this._map.addControl(new SMap.Control.Sync({ bottomSpace: 0 }));
 					this._map.addDefaultControls();
-					this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
 
-					this._markers = new SMap.Layer.Marker();
-					this._map.addLayer(this._markers).enable();
+					this._map.addControl(followControl, { left: "10px", top: "10px" });
 
-					var node = document.createElement("div");
-					node.id = "gps";
-					var opts = {
-						url: node,
-						anchor: { left: 10, top: 10 }
-					};
+					this._layers.tile = this._map.addDefaultLayer(SMap.DEF_TURIST);
+
+					this._map.addLayer(this._layers.markers).enable();
+
 					this._positionMarker = positionMarker();
-					this._positionLayer = new SMap.Layer.Marker();
-					this._positionLayer.addMarker(this._positionMarker);
-					this._map.addLayer(this._positionLayer);
+					this._layers.position.addMarker(this._positionMarker);
+					this._map.addLayer(this._layers.position);
 
 					this._map.getSignals().addListener(this, "map-redraw", "_mapRedraw");
 					this._map.getSignals().addListener(this, "marker-click", "_markerClick");
 
 					pubsub.subscribe("position-change", this);
+					pubsub.subscribe("network-change", this);
+					pubsub.subscribe("follow-change", this);
 				}
 
 				_createClass(Map, [{
@@ -565,10 +588,29 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 							case "position-change":
 								if (data.coords) {
 									this._positionMarker.setCoords(data.coords);
-									this._positionLayer.enable();
-									this._map.setCenter(data.coords);
+									this._layers.position.enable();
+
+									if (followControl.isActive()) {
+										this._map.setCenter(data.coords);
+									}
 								} else {
-									this._positionLayer.disable();
+									this._layers.position.disable();
+								}
+								break;
+
+							case "network-change":
+								this._onLine = data.onLine;
+								if (data.onLine) {
+									this._layers.tile.enable();
+									this._mapRedraw();
+								} else {
+									this._layers.tile.disable();
+								}
+								break;
+
+							case "follow-change":
+								if (data.follow) {
+									this._map.setCenter(this._positionMarker.getCoords());
 								}
 								break;
 						}
@@ -578,9 +620,16 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 					value: function _mapRedraw() {
 						var _this = this;
 
+						localStorage.setItem("gc-center", JSON.stringify(this.getCenter().toWGS84()));
+						localStorage.setItem("gc-zoom", this._map.getZoom());
+
+						if (!this._onLine) {
+							return;
+						}
+
 						var zoom = this._map.getZoom();
 						if (zoom < 13) {
-							this._markers.removeAll();
+							this._layers.markers.removeAll();
 							return;
 						}
 
@@ -591,12 +640,12 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 				}, {
 					key: "_render",
 					value: function _render(items) {
-						this._markers.removeAll();
+						this._layers.markers.removeAll();
 
 						var markers = items.map(function (item) {
 							return item.buildMarker();
 						});
-						this._markers.addMarker(markers);
+						this._layers.markers.addMarker(markers);
 					}
 				}, {
 					key: "_markerClick",
@@ -618,10 +667,19 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 	};
 });
 
-System.register("net.js", ["panes/log.js"], function (_export) {
+System.register("persistentStorage.js", [], function (_export) {
+  "use strict";
+
+  return {
+    setters: [],
+    execute: function () {}
+  };
+});
+
+System.register("net.js", ["panes/log.js", "pubsub.js"], function (_export) {
 	"use strict";
 
-	var log, tileServers, expando, nonce;
+	var log, pubsub, tileServers, expando, nonce, onLine;
 
 	_export("getTile", getTile);
 
@@ -659,7 +717,16 @@ System.register("net.js", ["panes/log.js"], function (_export) {
 		});
 	}
 
+	function rejectOffline() {
+		var error = new Error("Offline");
+		return Promise.reject(error);
+	}
+
 	function getTile(tile) {
+		if (!onLine) {
+			return rejectOffline();
+		}
+
 		var server = (tile.x + tile.y) % tileServers + 1;
 		var base = "https://tiles0" + server + ".geocaching.com";
 		var imgUrl = base + "/map.png?x=" + tile.x + "&y=" + tile.y + "&z=" + tile.zoom + "&ts=1";
@@ -675,17 +742,82 @@ System.register("net.js", ["panes/log.js"], function (_export) {
 	}
 
 	function getDetail(id) {
+		if (!onLine) {
+			return rejectOffline();
+		}
 		return jsonp("https://tiles01.geocaching.com/map.details?i=" + id);
 	}
 
 	return {
 		setters: [function (_panesLogJs) {
 			log = _panesLogJs["default"];
+		}, function (_pubsubJs) {
+			pubsub = _pubsubJs;
 		}],
 		execute: function () {
 			tileServers = 4;
 			expando = ("1.9.1" + Math.random()).replace(/\D/g, "");
 			nonce = Date.now();
+			onLine = false;
+
+			pubsub.subscribe("network-change", function (message, publisher, data) {
+				onLine = data.onLine;
+			});
+		}
+	};
+});
+
+System.register("followcontrol.js", ["pubsub.js"], function (_export) {
+	"use strict";
+
+	var pubsub, FollowControl;
+	return {
+		setters: [function (_pubsubJs) {
+			pubsub = _pubsubJs;
+		}],
+		execute: function () {
+			FollowControl = JAK.ClassMaker.makeClass({
+				NAME: "FollowControl",
+				VERSION: "1.0",
+				EXTEND: SMap.Control.Visible
+			});
+
+			FollowControl.prototype.$constructor = function () {
+				SMap.Control.Visible.prototype.$constructor.call(this);
+				this._build();
+
+				pubsub.subscribe("position-change", this);
+			};
+
+			FollowControl.prototype.handleMessage = function (message, publisher, data) {
+				this._checkbox.disabled = !data.coords;
+			};
+
+			FollowControl.prototype.handleEvent = function (e) {
+				localStorage.setItem("gc-follow", this.isActive() ? "1" : "0");
+				pubsub.publish("follow-change", this, { follow: this.isActive() });
+			};
+
+			FollowControl.prototype.isActive = function () {
+				return this._checkbox.checked;
+			};
+
+			FollowControl.prototype._build = function () {
+				this._dom.container = document.createElement("label");
+
+				this._checkbox = document.createElement("input");
+				this._dom.container.appendChild(this._checkbox);
+				this._checkbox.type = "checkbox";
+				this._checkbox.disabled = true;
+				var stored = localStorage.getItem("gc-follow");
+				this._checkbox.checked = stored ? Number(stored) : true;
+
+				this._dom.container.appendChild(document.createTextNode("Follow me"));
+
+				this._checkbox.addEventListener("click", this);
+			};
+
+			_export("default", new FollowControl());
 		}
 	};
 });
@@ -710,6 +842,7 @@ System.register("itemStorage.js", ["net.js", "item.js", "tile.js", "panes/log.js
 	}
 
 	function getInViewport(map) {
+		log.debug("listing viewport");
 		var half = map.getSize().clone().scale(0.5);
 		var w = half.x;
 		var h = half.y;
@@ -728,7 +861,6 @@ System.register("itemStorage.js", ["net.js", "item.js", "tile.js", "panes/log.js
 				if (tile in usedTiles) {
 					continue;
 				}
-				usedTiles[tile] = true;
 				if (tileHasEmptyParent(tile)) {
 					continue;
 				}
@@ -765,6 +897,8 @@ System.register("itemStorage.js", ["net.js", "item.js", "tile.js", "panes/log.js
 	}
 
 	function parseTileData(data, tile) {
+		usedTiles[tile] = true;
+
 		if (!data) {
 			emptyTiles[tile] = tile;
 			return;
@@ -956,7 +1090,7 @@ System.register("nav.js", ["panes/map.js", "panes/list.js", "panes/detail.js", "
 			return;
 		}
 
-		location.hash = what;
+		location.hash = "!" + what;
 
 		for (var id in components) {
 			var section = document.querySelector("#" + id);
@@ -1011,7 +1145,7 @@ System.register("nav.js", ["panes/map.js", "panes/list.js", "panes/detail.js", "
 
 			window.addEventListener("hashchange", {
 				handleEvent: function handleEvent(e) {
-					var hash = location.hash.substring(1);
+					var hash = location.hash.substring(2);
 					if (hash in components) {
 						go(hash);
 					}
@@ -1076,9 +1210,9 @@ System.register("item.js", ["panes/log.js", "panes/map.js", "tile.js", "itemStor
 					key: "getImage",
 					value: function getImage(large) {
 						if (this._detail) {
-							return "tmp/gif-" + (large ? "large" : "small") + "/" + this._detail.type.value + ".gif";
+							return "img/" + (large ? "large" : "small") + "/" + this._detail.type.value + ".gif";
 						} else {
-							return "tmp/unknown.gif";
+							return "img/unknown.gif";
 						}
 					}
 				}, {
@@ -1208,13 +1342,18 @@ System.register("item.js", ["panes/log.js", "panes/map.js", "tile.js", "itemStor
 						var table = document.createElement("table");
 						parent.appendChild(table);
 
-						this._buildRow(table, "Type", this._detail.type.text);
-						this._buildRow(table, "Date", this._detail.hidden);
-						this._buildRow(table, "Created by", this._detail.owner.text);
-						this._buildRow(table, "Difficulty", this._detail.difficulty.text);
-						this._buildRow(table, "Terrain", this._detail.terrain.text);
-						this._buildRow(table, "Size", this._detail.container.text);
-						this._buildRow(table, "Favorites", this._detail.fp);
+						var d = this._detail;
+						this._buildRow(table, "Type", d.type.text);
+						this._buildRow(table, "Created", d.owner.text + ", " + d.hidden);
+						this._buildRow(table, "Difficulty, Terrain", d.difficulty.text + "/5, " + d.difficulty.text + "/5");
+						this._buildRow(table, "Size", d.container.text);
+						this._buildRow(table, "Favorites", d.fp);
+
+						var a = document.createElement("a");
+						a.target = "_blank";
+						a.href = "http://www.geocaching.com/geocache/" + this._id + "_" + encodeURIComponent(this._name);
+						a.innerHTML = "geocaching.com";
+						this._buildRow(table, "Detail", a);
 					}
 				}, {
 					key: "_buildRow",
@@ -1228,7 +1367,11 @@ System.register("item.js", ["panes/log.js", "panes/map.js", "tile.js", "itemStor
 
 						td = document.createElement("td");
 						row.appendChild(td);
-						td.appendChild(document.createTextNode(second));
+						if (typeof second == "string") {
+							td.appendChild(document.createTextNode(second));
+						} else {
+							td.appendChild(second);
+						}
 					}
 				}]);
 
