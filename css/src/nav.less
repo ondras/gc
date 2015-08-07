@@ -1,8 +1,11 @@
 nav ul {
+	@color: #888;
+
 	list-style: none;
 	display: flex;
 	margin: 0;
 	padding: 0;
+	border-bottom: 1px solid @color;
 
 	li {
 		flex: 1;
@@ -13,10 +16,10 @@ nav ul {
 			text-align: center;
 			text-decoration: none;
 			padding: 1em 0;
-			border-bottom: 1px solid #888;
+			border-bottom: 3px solid transparent;
 
 			&.active {
-				background-color: #eee;
+				background-color: lighten(@color, 40%);
 				border-bottom: 3px solid #888;
 			}
 		}

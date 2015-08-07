@@ -15,7 +15,7 @@ export default class Map {
 		this._map.addDefaultControls();
 		this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
 		
-		this._markers = new SMap.Layer.Marker("items");
+		this._markers = new SMap.Layer.Marker();
 		this._map.addLayer(this._markers).enable();
 
 		let node = document.createElement("div");
@@ -33,11 +33,11 @@ export default class Map {
 		this._map.getSignals().addListener(this, "marker-click", "_markerClick");
 
 		pubsub.subscribe("position-change", this);
-		/*
+		
 		setInterval(() => {
 			pubsub.publish("position-change", this, {coords:this._map.getCenter()});
 		}, 2000);
-		*/
+		
 	}
 	
 	activate() {
@@ -76,16 +76,7 @@ export default class Map {
 	_render(items) {
 		this._markers.removeAll();
 
-		let markers = items.map(item => {
-			let coords = item.getCoords();
-			let options = {
-				title: item.getName(),
-				url: item.getImage(),
-				anchor: {left:9, top:9}
-			}
-			return new SMap.Marker(coords, item.getId(), options);
-		});
-
+		let markers = items.map(item => item.buildMarker());
 		this._markers.addMarker(markers);
 	}
 

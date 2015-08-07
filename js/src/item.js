@@ -26,6 +26,15 @@ export default class Item {
 		}
 	}
 
+	buildMarker() {
+		let options = {
+			title: this._name,
+			url: this.getImage(),
+			anchor: {left:9, top:9}
+		}
+		return new SMap.Marker(this._coords, this._id, options);
+	}
+
 	build(parent) {
 //		log.debug("building item", this._id);
 		let heading = document.createElement("h2");

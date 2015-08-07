@@ -12,21 +12,22 @@ class Detail {
 
 		this._angle = 0;
 		this._coords = null;
+		this._layers = {
+			marker: new SMap.Layer.Marker(),
+			tile: null
+		}
+		this._marker = null;
 
 		this._arrow = this._compass.querySelector(".arrow");
 
 		this._map = new SMap(this._compass.querySelector(".smap"), null, 20);
-		this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
+		this._layers.tile = this._map.addDefaultLayer(SMap.DEF_TURIST).enable();
 
-		this._layer = new SMap.Layer.Marker();
-		this._map.addLayer(this._layer);
+		this._map.addLayer(this._layers.marker);
 
 		this._positionMarker = positionMarker();
-		this._layer.addMarker(this._positionMarker);
+		this._layers.marker.addMarker(this._positionMarker);
 
-		this._marker = new SMap.Marker(SMap.Coords.fromWGS84(0, 0), null, {anchor: {left:9,top:9}});
-		this._layer.addMarker(this._marker);
-		
 		pubsub.subscribe("orientation-change", this);
 		pubsub.subscribe("position-change", this);
 	}
@@ -47,24 +48,29 @@ class Detail {
 			break;
 
 			case "orientation-change":
-				this._angle = data.angle;
-				this._updateCompass();
+				this._angle = data.angle || 0;
+				this._updateRotation();
 			break;
 
 			case "position-change":
 				this._coords = data.coords;
+
 				this._updateDistance();
-				this._updateCompass();
+				this._updateRotation();
 
 				if (this._coords) {
 					this._map.setCenter(this._coords);
 					this._positionMarker.setCoords(this._coords);
+					for (let p in this._layers) { this._layers[p].enable(); }
+				} else {
+					for (let p in this._layers) { this._layers[p].disable(); }
 				}
 			break;
 		}
 	}
 
 	show(id) {
+		log.log("showing detail for", id);
 		let item = itemStorage.getById(id);
 		if (!item) { 
 			log.error("item", id, "not in cache"); 
@@ -85,19 +91,22 @@ class Detail {
 		this._node.appendChild(this._compass);
 
 		this._updateDistance();
-		this._updateCompass();
+		this._updateRotation();
 
-		this._layer.enable();
-		this._marker.setCoords(this._item.getCoords());
-		this._marker.setURL(this._item.getImage());
+		let l = this._layers.marker;
+		if (this._marker) { l.removeMarker(this._marker); }
+		this._marker = this._item.buildMarker();
+		l.addMarker(this._marker);
 	}
 
-	_updateCompass() {
+	_updateRotation() {
 		/* rotate map */
 		this._map.getContainer().style.transform = `rotate(${this._angle}deg)`;
 		
 		/* inverse rotate marker */
-		this._marker.getContainer()[SMap.LAYER_MARKER].style.transform = `rotate(${-this._angle}deg)`;
+		if (this._marker) { 
+			this._marker.getContainer()[SMap.LAYER_MARKER].style.transform = `rotate(${-this._angle}deg)`;
+		}
 
 		/* rotate arrow */
 		let azimuth = 0;

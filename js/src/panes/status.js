@@ -59,7 +59,7 @@ class Status {
 			case "deviceorientation":
 //				log.debug("alpha", e.alpha);
 				this._orientation.className = "good";
-				this._orientation.querySelector("span").innerHTML = `${e.alpha.toFixed(2)}°`;
+				this._orientation.querySelector("span").innerHTML = `${e.alpha === null ? "null" : e.alpha.toFixed(2)}°`;
 
 				pubsub.publish("orientation-change", this, {angle:e.alpha});
 			break;
