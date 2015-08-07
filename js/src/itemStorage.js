@@ -1,4 +1,6 @@
 import * as net from "net.js";
+import * as pubsub from "pubsub.js";
+
 import Item from "item.js";
 import Tile from "tile.js";
 import log from "panes/log.js";
@@ -6,6 +8,8 @@ import log from "panes/log.js";
 let items = Object.create(null);
 let usedTiles = Object.create(null);
 let emptyTiles = Object.create(null);
+let onLine = false;
+let timeout = null;
 
 export function getById(id) {
 	return items[id];
@@ -37,7 +41,7 @@ export function getInViewport(map) {
 	}
 
 	return Promise.all(promises)
-		.then(() => computeCoords())
+		.then(() => computeCoords(), () => {})
 		.then(() => filterByViewport(map));
 }
 
@@ -103,3 +107,45 @@ function tileHasEmptyParent(tile) {
 	}
 	return false;
 }
+
+export function load() {
+	let str = localStorage.getItem("gc-items");
+	if (!str) { 
+		log.debug("localStorage is empty");
+		return; 
+	}
+
+	let limit = 1000*60*60*24*7; // 7 days
+	let now = Date.now();
+
+	try {
+		let data = JSON.parse(str);
+		for (let id in data) {
+			let item = Item.fromData(data[id]);
+			if (now - item.getTime() > limit) { 
+				log.debug("discarding old", id);
+				continue;
+			}
+			items[id] = item;
+		}
+	} catch (e) { log.error(e.message); return; }
+
+	log.log("loaded", Object.keys(items).length, "stored items");
+}
+
+function save() {
+	let obj = Object.create(null);
+	for (let id in items) {
+		obj[id] = items[id].toData();
+	}
+	localStorage.setItem("gc-items", JSON.stringify(obj));
+	log.debug("saved", Object.keys(obj).length, "items to localStorage");
+}
+
+pubsub.subscribe("item-change", (message, publisher, data) => {
+	if (timeout) { clearTimeout(timeout); }
+	timeout = setTimeout(() => {
+		timeout = null;
+		save();
+	}, 3000);
+});

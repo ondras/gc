@@ -13,11 +13,33 @@ export default class Item {
 		this._coords = null;
 		this._positions = [];
 		this._detail = null;
+		this._ts = Date.now();
+	}
+
+	static fromData(data) {
+		let item = new this(data.id, data.name);
+		item._ts = data.ts;
+		item._bestZoom = data.zoom;
+		item._coords = SMap.Coords.fromWGS84(data.coords[0], data.coords[1]);
+		item._detail = data.detail;
+		return item;
+	}
+
+	toData() {
+		return {
+			id: this._id,
+			name: this._name,
+			zoom: this._bestZoom,
+			coords: this._coords.toWGS84(),
+			detail: this._detail
+		}
 	}
 
 	getId() { return this._id; }
 	getName() { return this._name; }
 	getCoords() { return this._coords; }
+	getTime() { return this._ts; } /* last update time */
+
 	getImage(large) {
 		if (this._detail) {
 			return `img/${large ? "large" : "small"}/${this._detail.type.value}.gif`;
@@ -54,6 +76,7 @@ export default class Item {
 		} else {
 			net.getDetail(this._id).then((response) => {
 				this._detail = response.data[0];
+				this._ts = Date.now();
 				pubsub.publish("item-change", this);
 			});
 		}
@@ -93,6 +116,8 @@ export default class Item {
 
 		this._coords = SMap.Coords.fromWGS84((bbox.left+bbox.right)/2, (bbox.top+bbox.bottom)/2);
 		this._positions = [];
+		this._ts = Date.now();
+		pubsub.publish("item-change", this);
 
 		return this;
 	}

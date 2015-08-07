@@ -11,7 +11,7 @@ class List {
 	}
 
 	activate() {
-		let center = map.getCenter(); /* FIXME *map* center? or geolocation? */
+		let center = map.getCenter();
 		log.debug("listing around", center.toWGS84());
 		let items = itemStorage.getNearby(center, 10);
 

@@ -154,7 +154,7 @@ System.register("panes/list.js", ["itemStorage.js", "pubsub.js", "panes/map.js",
 					value: function activate() {
 						var _this = this;
 
-						var center = map.getCenter(); /* FIXME *map* center? or geolocation? */
+						var center = map.getCenter();
 						log.debug("listing around", center.toWGS84());
 						var items = itemStorage.getNearby(center, 10);
 
@@ -520,7 +520,6 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 				function Map() {
 					_classCallCheck(this, Map);
 
-					this._onLine = false;
 					this._layers = {
 						tile: null,
 						markers: new SMap.Layer.Marker(),
@@ -599,7 +598,6 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 								break;
 
 							case "network-change":
-								this._onLine = data.onLine;
 								if (data.onLine) {
 									this._layers.tile.enable();
 									this._mapRedraw();
@@ -622,10 +620,6 @@ System.register("panes/map.js", ["itemStorage.js", "pubsub.js", "panes/detail.js
 
 						localStorage.setItem("gc-center", JSON.stringify(this.getCenter().toWGS84()));
 						localStorage.setItem("gc-zoom", this._map.getZoom());
-
-						if (!this._onLine) {
-							return;
-						}
 
 						var zoom = this._map.getZoom();
 						if (zoom < 13) {
@@ -822,10 +816,10 @@ System.register("followcontrol.js", ["pubsub.js"], function (_export) {
 	};
 });
 
-System.register("itemStorage.js", ["net.js", "item.js", "tile.js", "panes/log.js"], function (_export) {
+System.register("itemStorage.js", ["net.js", "pubsub.js", "item.js", "tile.js", "panes/log.js"], function (_export) {
 	"use strict";
 
-	var net, Item, Tile, log, items, usedTiles, emptyTiles;
+	var net, pubsub, Item, Tile, log, items, usedTiles, emptyTiles, onLine, timeout;
 
 	_export("getById", getById);
 
@@ -834,6 +828,8 @@ System.register("itemStorage.js", ["net.js", "item.js", "tile.js", "panes/log.js
 	_export("getTile", getTile);
 
 	_export("getNearby", getNearby);
+
+	_export("load", load);
 
 	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
 
@@ -872,7 +868,7 @@ System.register("itemStorage.js", ["net.js", "item.js", "tile.js", "panes/log.js
 
 		return Promise.all(promises).then(function () {
 			return computeCoords();
-		}).then(function () {
+		}, function () {}).then(function () {
 			return filterByViewport(map);
 		});
 	}
@@ -954,9 +950,48 @@ System.register("itemStorage.js", ["net.js", "item.js", "tile.js", "panes/log.js
 		}
 		return false;
 	}
+
+	function load() {
+		var str = localStorage.getItem("gc-items");
+		if (!str) {
+			log.debug("localStorage is empty");
+			return;
+		}
+
+		var limit = 1000 * 60 * 60 * 24 * 7; // 7 days
+		var now = Date.now();
+
+		try {
+			var data = JSON.parse(str);
+			for (var id in data) {
+				var item = Item.fromData(data[id]);
+				if (now - item.getTime() > limit) {
+					log.debug("discarding old", id);
+					continue;
+				}
+				items[id] = item;
+			}
+		} catch (e) {
+			log.error(e.message);return;
+		}
+
+		log.log("loaded", Object.keys(items).length, "stored items");
+	}
+
+	function save() {
+		var obj = Object.create(null);
+		for (var id in items) {
+			obj[id] = items[id].toData();
+		}
+		localStorage.setItem("gc-items", JSON.stringify(obj));
+		log.debug("saved", Object.keys(obj).length, "items to localStorage");
+	}
+
 	return {
 		setters: [function (_netJs) {
 			net = _netJs;
+		}, function (_pubsubJs) {
+			pubsub = _pubsubJs;
 		}, function (_itemJs) {
 			Item = _itemJs["default"];
 		}, function (_tileJs) {
@@ -968,6 +1003,17 @@ System.register("itemStorage.js", ["net.js", "item.js", "tile.js", "panes/log.js
 			items = Object.create(null);
 			usedTiles = Object.create(null);
 			emptyTiles = Object.create(null);
+			onLine = false;
+			timeout = null;
+			pubsub.subscribe("item-change", function (message, publisher, data) {
+				if (timeout) {
+					clearTimeout(timeout);
+				}
+				timeout = setTimeout(function () {
+					timeout = null;
+					save();
+				}, 3000);
+			});
 		}
 	};
 });
@@ -1053,13 +1099,15 @@ System.register("tile.js", ["panes/map.js"], function (_export) {
 	};
 });
 
-System.register("app.js", ["nav.js", "panes/log.js", "panes/status.js"], function (_export) {
+System.register("app.js", ["nav.js", "itemStorage.js", "panes/log.js", "panes/status.js"], function (_export) {
 	"use strict";
 
-	var nav, log, status;
+	var nav, itemStorage, log, status;
 	return {
 		setters: [function (_navJs) {
 			nav = _navJs;
+		}, function (_itemStorageJs) {
+			itemStorage = _itemStorageJs;
 		}, function (_panesLogJs) {
 			log = _panesLogJs["default"];
 		}, function (_panesStatusJs) {
@@ -1072,6 +1120,7 @@ System.register("app.js", ["nav.js", "panes/log.js", "panes/status.js"], functio
 			});
 
 			log.log("app starting");
+			itemStorage.load();
 			nav.go("map");
 			status.start();
 		}
@@ -1189,9 +1238,21 @@ System.register("item.js", ["panes/log.js", "panes/map.js", "tile.js", "itemStor
 					this._coords = null;
 					this._positions = [];
 					this._detail = null;
+					this._ts = Date.now();
 				}
 
 				_createClass(Item, [{
+					key: "toData",
+					value: function toData() {
+						return {
+							id: this._id,
+							name: this._name,
+							zoom: this._bestZoom,
+							coords: this._coords.toWGS84(),
+							detail: this._detail
+						};
+					}
+				}, {
 					key: "getId",
 					value: function getId() {
 						return this._id;
@@ -1207,7 +1268,14 @@ System.register("item.js", ["panes/log.js", "panes/map.js", "tile.js", "itemStor
 						return this._coords;
 					}
 				}, {
+					key: "getTime",
+					value: function getTime() {
+						return this._ts;
+					}
+				}, {
 					key: "getImage",
+					/* last update time */
+
 					value: function getImage(large) {
 						if (this._detail) {
 							return "img/" + (large ? "large" : "small") + "/" + this._detail.type.value + ".gif";
@@ -1250,6 +1318,7 @@ System.register("item.js", ["panes/log.js", "panes/map.js", "tile.js", "itemStor
 						} else {
 							net.getDetail(this._id).then(function (response) {
 								_this._detail = response.data[0];
+								_this._ts = Date.now();
 								pubsub.publish("item-change", _this);
 							});
 						}
@@ -1298,6 +1367,8 @@ System.register("item.js", ["panes/log.js", "panes/map.js", "tile.js", "itemStor
 
 						this._coords = SMap.Coords.fromWGS84((bbox.left + bbox.right) / 2, (bbox.top + bbox.bottom) / 2);
 						this._positions = [];
+						this._ts = Date.now();
+						pubsub.publish("item-change", this);
 
 						return this;
 					}
@@ -1372,6 +1443,16 @@ System.register("item.js", ["panes/log.js", "panes/map.js", "tile.js", "itemStor
 						} else {
 							td.appendChild(second);
 						}
+					}
+				}], [{
+					key: "fromData",
+					value: function fromData(data) {
+						var item = new this(data.id, data.name);
+						item._ts = data.ts;
+						item._bestZoom = data.zoom;
+						item._coords = SMap.Coords.fromWGS84(data.coords[0], data.coords[1]);
+						item._detail = data.detail;
+						return item;
 					}
 				}]);
 

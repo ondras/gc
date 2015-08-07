@@ -7,7 +7,6 @@ import followControl from "followcontrol.js";
 
 export default class Map {
 	constructor() {
-		this._onLine = false;
 		this._layers = {
 			tile: null,
 			markers: new SMap.Layer.Marker(),
@@ -69,7 +68,6 @@ export default class Map {
 			break;
 
 			case "network-change":
-				this._onLine = data.onLine;
 				if (data.onLine) {
 					this._layers.tile.enable();
 					this._mapRedraw();
@@ -89,8 +87,6 @@ export default class Map {
 	_mapRedraw() {
 		localStorage.setItem("gc-center", JSON.stringify(this.getCenter().toWGS84()));
 		localStorage.setItem("gc-zoom", this._map.getZoom());
-
-		if (!this._onLine) { return; }
 
 		let zoom = this._map.getZoom();
 		if (zoom < 13) {
