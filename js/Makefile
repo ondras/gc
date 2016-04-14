@@ -1,4 +1,4 @@
-SRC_FILES = $(shell find src -name '*.js' | sed 's/src\///')
+SRC_FILES = $(shell find src -name '*.js' | sed 's/src\///' | sort)
 MAIN = app.js
 
 all: polyfills app
@@ -15,7 +15,7 @@ $(MAIN): $(addprefix _build/,$(SRC_FILES))
 
 _build/%: src/%
 	mkdir -p $(dir $@)
-	cd src && babel -M -k --modules system $* > ../$@
+	babel --module-id $* $^ > $@
 
 clean:
 	rm -rf polyfills.js $(MAIN) _build
